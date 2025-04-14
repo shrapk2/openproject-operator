@@ -1,0 +1,23 @@
+# permissions for end users to view workpackages.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: openproject-k8s
+    app.kubernetes.io/managed-by: kustomize
+  name: workpackages-viewer-role
+rules:
+- apiGroups:
+  - openproject.org
+  resources:
+  - workpackages
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - openproject.org
+  resources:
+  - workpackages/status
+  verbs:
+  - get

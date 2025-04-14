@@ -1,0 +1,25 @@
+apiVersion: openproject.org/v1alpha1
+kind: WorkPackages
+metadata:
+  name: test-ticket
+  namespace: default
+spec:
+  serverConfigRef:
+    name: openproject-dev
+  subject: "Operator-created-Ticket-4"
+  description: |
+    This ticket was created by the Kubernetes operator running locally.
+    ## Markdown Header
+    * markdown bullet 
+    * markdown bullet
+
+    `extra credit code block`
+
+    ### Markdown Header 3
+    1. one
+    2. two
+    3. three
+  schedule: "*/2 * * * *" # every 2 minutes
+  projectID: 4
+  typeID: 6
+  epicID: 338

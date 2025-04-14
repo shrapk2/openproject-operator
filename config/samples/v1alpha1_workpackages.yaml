@@ -1,0 +1,9 @@
+apiVersion: openproject.org/v1alpha1
+kind: WorkPackages
+metadata:
+  labels:
+    app.kubernetes.io/name: openproject-k8s
+    app.kubernetes.io/managed-by: kustomize
+  name: workpackages-sample
+spec:
+  # TODO(user): Add fields here
