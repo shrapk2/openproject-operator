@@ -50,12 +50,6 @@ func (r *ServerConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	// Get a scoped logger for this ServerConfig
 	log := getScopedServerConfigLogger(ctx, &config)
 
-	// 🚫 Enforce only one config per namespace
-	if len(configs.Items) > 1 {
-		statusLog(log, "⚠️", "Multiple ServerConfigs found in namespace. Only one is allowed. Extra configs will be ignored.")
-		// You can optionally update the status or mark the others somehow
-	}
-
 	// Log that the ServerConfig was loaded
 	statusLog(log, "🛠", "ServerConfig loaded", "server", config.Spec.Server)
 

@@ -23,4 +23,10 @@ spec:
             - /manager
           env:
           - name: DEBUG
-            value: {{ .Values.debug | quote }}            
+            value: {{ .Values.debug | quote }}
+          - name: DEFAULT_REQUEUE_TIME
+            value: {{ .Values.operator.DefaultRequeueTime | quote }}
+          - name: SHORT_REQUEUE_TIME
+            value: {{ .Values.operator.ShortRequeueTime | quote }}
+          - name: REQUEST_TIMEOUT
+            value: {{ .Values.operator.RequestTimeout | quote }}

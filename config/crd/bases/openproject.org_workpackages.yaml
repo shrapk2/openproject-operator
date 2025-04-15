@@ -39,18 +39,27 @@ spec:
           spec:
             description: WorkPackagesSpec defines the desired state of WorkPackages
             properties:
+              additionalFields:
+                description: AdditionalFields contains extra fields to include in
+                  the work package
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
               description:
+                description: Description is the markdown content for the ticket
                 type: string
               epicID:
+                description: EpicID is the parent work package ID (optional)
                 type: integer
               projectID:
+                description: ProjectID is the numeric ID of the OpenProject project
                 type: integer
               schedule:
+                description: Schedule is a cron expression for when to create the
+                  ticket
                 type: string
               serverConfigRef:
-                description: |-
-                  LocalObjectReference contains enough information to let you locate the
-                  referenced object inside the same namespace.
+                description: ServerConfigRef is a reference to the OpenProject server
+                  configuration
                 properties:
                   name:
                     default: ""
@@ -64,12 +73,15 @@ spec:
                 type: object
                 x-kubernetes-map-type: atomic
               subject:
+                description: Subject is the title of the ticket
                 type: string
               typeID:
+                description: TypeID is the numeric ID of the work package type
                 type: integer
             required:
             - description
             - projectID
+            - schedule
             - serverConfigRef
             - subject
             - typeID

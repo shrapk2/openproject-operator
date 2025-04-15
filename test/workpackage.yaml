@@ -23,3 +23,14 @@ spec:
   projectID: 4
   typeID: 6
   epicID: 338
+  # additionalFields:
+  #   customField1: "custom field 1"
+  #   customField2: "custom field 2"
+  #   customField3: "custom field 3"
+  #   customField4: "custom field 4"
+  #   customField5: "custom field 5"
+  #   customField6: "custom field 6"
+  #   customField7: "custom field 7"
+  #   customField8: "custom field 8"
+  #   customField9: "custom field 9"
+  #   customField10: "custom field 10"

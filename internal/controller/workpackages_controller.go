@@ -28,16 +28,38 @@ const (
 	StatusScheduled = "Scheduled"
 	StatusCreated   = "Created"
 	StatusFailed    = "Failed"
-
-	DefaultRequeueTime = time.Minute * 1
-	ShortRequeueTime   = time.Second * 10
-	RequestTimeout     = time.Second * 30
 )
 
 var (
+	// Debug mode configuration
 	debugEnabled = os.Getenv("DEBUG") == "true"
-	httpClient   = &http.Client{Timeout: RequestTimeout} // Reusable HTTP client
+
+	// Time configurations with environment variables and defaults
+	DefaultRequeueTime = getDurationFromEnv("DEFAULT_REQUEUE_TIME", time.Minute*1)
+	ShortRequeueTime   = getDurationFromEnv("SHORT_REQUEUE_TIME", time.Second*30)
+	RequestTimeout     = getDurationFromEnv("REQUEST_TIMEOUT", time.Second*90)
+
+	// Reusable HTTP client
+	httpClient = &http.Client{Timeout: RequestTimeout}
 )
+
+// getDurationFromEnv reads a duration from an environment variable with a default fallback
+func getDurationFromEnv(key string, defaultValue time.Duration) time.Duration {
+	envValue := os.Getenv(key)
+	if envValue == "" {
+		return defaultValue
+	}
+
+	duration, err := time.ParseDuration(envValue)
+	if err != nil {
+		// Log error but use default value
+		fmt.Printf("❌ Invalid duration format for %s: %s. Using default: %s\n",
+			key, envValue, defaultValue)
+		return defaultValue
+	}
+
+	return duration
+}
 
 // getScopedLogger returns a simplified logger for normal mode or a detailed logger for debug mode
 func getScopedLogger(ctx context.Context, wp *v1alpha1.WorkPackages) logr.Logger {
@@ -77,6 +99,24 @@ type WorkPackageReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+// maybeBase64 makes a best guess if a string is base64 encoded
+func maybeBase64(s string) bool {
+	// Quick check for base64 patterns
+	if len(s) == 0 || len(s)%4 != 0 {
+		return false
+	}
+
+	// Check if it contains only valid base64 characters
+	for _, c := range s {
+		if !((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+			(c >= '0' && c <= '9') || c == '+' || c == '/' || c == '=') {
+			return false
+		}
+	}
+
+	return true
+}
+
 // makeOpenProjectRequest creates and executes an OpenProject API request
 func makeOpenProjectRequest(ctx context.Context, method, url, apiKey string, payload []byte) (*http.Response, error) {
 	reqCtx, cancel := context.WithTimeout(ctx, RequestTimeout)
@@ -87,9 +127,33 @@ func makeOpenProjectRequest(ctx context.Context, method, url, apiKey string, pay
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Set headers
-	authValue := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("apikey:%s", apiKey)))
-	req.Header.Set("Authorization", fmt.Sprintf("Basic %s", authValue))
+	//Try to directly decode the base64 key first
+	decodedBytes, err := base64.StdEncoding.DecodeString(apiKey)
+	if err == nil {
+		// Successfully decoded - it was base64, use the decoded value without any prefix
+		// The key appears to be already in the correct format
+		rawKey := strings.TrimSpace(string(decodedBytes))
+		// Re-encode it properly for the Authorization header
+		authValue := base64.StdEncoding.EncodeToString([]byte("apikey:" + rawKey))
+		req.Header.Set("Authorization", fmt.Sprintf("Basic %s", authValue))
+
+		if debugEnabled {
+			fmt.Printf("API Key was base64, decoded to: %s\n", rawKey)
+			fmt.Printf("Auth header value: %s\n", authValue)
+		}
+
+	} else {
+		// Not base64 or corrupt - use the raw key
+		rawKey := strings.TrimSpace(apiKey)
+		authValue := base64.StdEncoding.EncodeToString([]byte("apikey:" + rawKey))
+		req.Header.Set("Authorization", fmt.Sprintf("Basic %s", authValue))
+
+		if debugEnabled {
+			fmt.Printf("API Key was NOT base64, using raw: %s\n", rawKey)
+			fmt.Printf("Auth header value: %s\n", authValue)
+		}
+	}
+
 	req.Header.Set("Content-Type", "application/json")
 
 	return httpClient.Do(req)
@@ -134,6 +198,40 @@ func applyStatusUpdate(ctx context.Context, r *WorkPackageReconciler, wp *v1alph
 	return r.Status().Patch(ctx, wp, client.MergeFrom(original))
 }
 
+// processAdditionalFields merges additional fields into the payload
+func processAdditionalFields(payload map[string]interface{}, additionalFields v1alpha1.JSON) {
+	// Convert the JSON to a map we can work with
+	var fields map[string]interface{}
+	if err := json.Unmarshal(additionalFields.Raw.Raw, &fields); err != nil {
+		if debugEnabled {
+			fmt.Printf("Error unmarshaling additional fields: %v\n", err)
+		}
+		return
+	}
+
+	// Process regular fields
+	for key, value := range fields {
+		// Skip _links which need special handling
+		if key == "_links" {
+			continue
+		}
+		payload[key] = value
+	}
+
+	// Process _links separately to merge with existing ones
+	if linksRaw, ok := fields["_links"].(map[string]interface{}); ok {
+		existingLinks, _ := payload["_links"].(map[string]interface{})
+		for linkKey, linkValue := range linksRaw {
+			existingLinks[linkKey] = linkValue
+		}
+	}
+
+	if debugEnabled {
+		jsonData, _ := json.MarshalIndent(payload, "", "  ")
+		fmt.Printf("Final payload with additional fields:\n%s\n", string(jsonData))
+	}
+}
+
 // buildTicketPayload constructs the payload for creating a ticket
 func buildTicketPayload(wp *v1alpha1.WorkPackages) map[string]interface{} {
 	payload := map[string]interface{}{
@@ -156,6 +254,12 @@ func buildTicketPayload(wp *v1alpha1.WorkPackages) map[string]interface{} {
 		payload["_links"].(map[string]interface{})["parent"] = map[string]string{
 			"href": fmt.Sprintf("/api/v3/work_packages/%d", wp.Spec.EpicID),
 		}
+	}
+
+	// Process additional fields if present
+	// Check if Raw exists and has content
+	if wp.Spec.AdditionalFields.Raw.Raw != nil && len(wp.Spec.AdditionalFields.Raw.Raw) > 0 {
+		processAdditionalFields(payload, wp.Spec.AdditionalFields)
 	}
 
 	return payload
@@ -259,7 +363,8 @@ func (r *WorkPackageReconciler) handleCreateTicket(ctx context.Context, wp *v1al
 		if debugEnabled {
 			statusLog(log, "⚠", "Non-2xx status from OpenProject",
 				"status", resp.StatusCode,
-				"url", url)
+				"url", url,
+				"apikey", apiKey)
 		} else {
 			statusLog(log, "⚠", "Non-2xx status from OpenProject", "status", resp.StatusCode)
 		}
@@ -321,7 +426,7 @@ func (r *WorkPackageReconciler) loadConfig(ctx context.Context, wp *v1alpha1.Wor
 		log.Error(err, "❌ Could not load ServerConfig", "serverconfig", wp.Spec.ServerConfigRef.Name)
 		return nil, "", err
 	}
-	statusLog(log, "🛠", "ServerConfig loaded", "workpackage", wp.Name, "serverconfig", wp.Spec.ServerConfigRef.Name)
+	statusLog(log, "🛠", "ServerConfig loaded", "serverconfig", wp.Spec.ServerConfigRef.Name)
 
 	apiKey, err := configloader.LoadAPIKey(ctx, r.Client, config)
 	if err != nil {

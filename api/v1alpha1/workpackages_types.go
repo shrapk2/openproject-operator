@@ -17,8 +17,11 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -29,16 +32,59 @@ type ServerConfigRef struct {
 	// Optional: Namespace string `json:"namespace,omitempty"`
 }
 
+// JSON represents an arbitrary JSON value
+// +kubebuilder:validation:Type=object
+// +kubebuilder:validation:Schemaless
+// +kubebuilder:pruning:PreserveUnknownFields
+type JSON struct {
+	// Raw is the underlying JSON data
+	Raw runtime.RawExtension `json:"-"`
+}
+
+// MarshalJSON returns m as the JSON encoding of m.
+func (m JSON) MarshalJSON() ([]byte, error) {
+	if m.Raw.Raw == nil {
+		return []byte("null"), nil
+	}
+	return m.Raw.Raw, nil
+}
+
+// UnmarshalJSON sets *m to a copy of data.
+func (m *JSON) UnmarshalJSON(data []byte) error {
+	if m == nil {
+		return fmt.Errorf("JSON: UnmarshalJSON on nil pointer")
+	}
+	m.Raw.Raw = append([]byte(nil), data...)
+	return nil
+}
+
 // WorkPackagesSpec defines the desired state of WorkPackages
 type WorkPackagesSpec struct {
 	// +kubebuilder:validation:Required
+	// Subject is the title of the ticket
+	Subject string `json:"subject"`
+	// Description is the markdown content for the ticket
+	Description string `json:"description"`
+
+	// ProjectID is the numeric ID of the OpenProject project
+	ProjectID int `json:"projectID"`
+
+	// TypeID is the numeric ID of the work package type
+	TypeID int `json:"typeID"`
+
+	// EpicID is the parent work package ID (optional)
+	// +optional
+	EpicID int `json:"epicID,omitempty"`
+
+	// Schedule is a cron expression for when to create the ticket
+	Schedule string `json:"schedule"`
+
+	// ServerConfigRef is a reference to the OpenProject server configuration
 	ServerConfigRef corev1.LocalObjectReference `json:"serverConfigRef"`
-	Subject         string                      `json:"subject"`
-	Description     string                      `json:"description"`
-	Schedule        string                      `json:"schedule,omitempty"` // Optional cron
-	ProjectID       int                         `json:"projectID"`
-	TypeID          int                         `json:"typeID"`
-	EpicID          int                         `json:"epicID,omitempty"` // Optional parent
+
+	// AdditionalFields contains extra fields to include in the work package
+	// +optional
+	AdditionalFields JSON `json:"additionalFields,omitempty"`
 }
 
 // WorkPackagesStatus defines the observed state of WorkPackages
