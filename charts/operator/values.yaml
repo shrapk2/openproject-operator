@@ -2,7 +2,7 @@ replicaCount: 1
 debug: false
 image:
   repository: shrapk2/openproject-operator
-  tag: latest
+  tag: v0.2.4
   pullPolicy: IfNotPresent
 
 serviceAccount:
@@ -15,6 +15,6 @@ rbac:
 resources: {}
 
 operator:
-  DefaultRequeueTime: "1" #minutues
-  ShortRequeueTime: "30" #seconds
-  RequestTimeout: "90" #seconds
+  DefaultRequeueTime: "720m"
+  ShortRequeueTime: "900s"
+  RequestTimeout: "90s"

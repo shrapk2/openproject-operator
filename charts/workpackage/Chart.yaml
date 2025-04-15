@@ -4,3 +4,5 @@ description: A Helm chart to deploy OpenProject WorkPackages
 type: application
 version: 0.1.1
 appVersion: "v0.2.4"
+## Sample install
+## helm upgrade workpackage-dev-1 . -f ./path/to/values.yaml --install -n openproject --take-ownership

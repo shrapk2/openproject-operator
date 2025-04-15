@@ -1,21 +1,30 @@
+{{- define "renderWorkPackages" -}}
+{{- $timeBlock := .timeBlock }}
+{{- $root := .root }}
+{{- range $idx, $item := .entries }}
+---
 apiVersion: openproject.org/v1alpha1
 kind: WorkPackages
 metadata:
-  name: {{ .Release.Name }}
-  namespace: {{ .Release.Namespace }}
+  name: {{ printf "%s-%s-%s" $root.Release.Name (lower $timeBlock) (lower  ($item.name | replace " " "-")) | trunc 63 | trimSuffix "-" }}
+  namespace: {{ $root.Release.Namespace }}
   labels:
-    {{- include "openproject-workpackage.labels" . | nindent 4 }}
-  {{- with .Values.annotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}   
+    {{- include "openproject-workpackage.labels" $root | nindent 4 }}
 spec:
   serverConfigRef:
-    name: {{ .Values.serverConfigReference.name }}
-  subject: {{ .Values.workpackageDetails.subject | quote }}
+    name: {{ $item.serverConfigRef }}
+  subject: {{ $item.name | quote }}
   description: |
-{{ .Values.workpackageDetails.description | indent 4 }}
-  schedule: {{ .Values.workpackageDetails.schedule | quote }}
-  projectID: {{ .Values.workpackageDetails.projectID }}
-  typeID: {{ .Values.workpackageDetails.typeID }}
-  epicID: {{ .Values.workpackageDetails.epicID }}
+{{ $item.description | indent 4 }}
+  schedule: {{ $item.schedule | quote }}
+  projectID: {{ $item.projectID }}
+  typeID: {{ $item.typeID }}
+  epicID: {{ $item.epicID }}
+{{- end }}
+{{- end }}
+
+{{- range $blockName, $entries := dict "daily" .Values.daily "monthly" .Values.monthly "quarterly" .Values.quarterly "annually" .Values.annually }}
+  {{- if $entries }}
+    {{- include "renderWorkPackages" (dict "entries" $entries "timeBlock" $blockName "root" $) }}
+  {{- end }}
+{{- end }}

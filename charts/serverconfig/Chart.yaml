@@ -22,3 +22,6 @@ version: 0.1.1
 # follow Semantic Versioning. They should reflect the version the application is using.
 # It is recommended to use it with quotes.
 appVersion: "v0.2.4"
+
+## Sample install
+## helm upgrade openproject-dev-1 . -f ./path/to/values.yaml --install -n openproject --take-ownership
