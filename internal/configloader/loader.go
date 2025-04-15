@@ -11,17 +11,15 @@ import (
 )
 
 // LoadServerConfig fetches the singleton config in a namespace
-func LoadServerConfig(ctx context.Context, c client.Client, namespace string) (*openprojectv1alpha1.ServerConfig, error) {
-	var config openprojectv1alpha1.ServerConfig
-	name := types.NamespacedName{
-		Name:      "openproject",
-		Namespace: namespace,
+func LoadServerConfig(ctx context.Context, c client.Client, name string, namespace string) (*openprojectv1alpha1.ServerConfig, error) {
+	if name == "" {
+		return nil, fmt.Errorf("serverConfigRef.Name is empty")
 	}
 
-	if err := c.Get(ctx, name, &config); err != nil {
+	var config openprojectv1alpha1.ServerConfig
+	if err := c.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, &config); err != nil {
 		return nil, fmt.Errorf("failed to get ServerConfig: %w", err)
 	}
-
 	return &config, nil
 }
 

@@ -1,0 +1,14 @@
+{{- if .Release.IsInstall }}
+📦 OpenProject WorkPackage "{{ .Release.Name }}" has been successfully installed!
+
+🚀 This WorkPackage will be managed by the OpenProject Operator.
+
+📂 To view the WorkPackage:
+  kubectl get workpackages {{ .Values.name }} -n {{ .Release.Namespace }} -o yaml
+
+
+🗑️ To uninstall this WorkPackage:
+  helm uninstall {{ .Release.Name }} -n {{ .Release.Namespace }}
+
+💬 Happy automating OpenProject tickets!
+{{- end }}

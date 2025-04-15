@@ -1,0 +1,14 @@
+{{- if .Release.IsInstall }}
+📦 OpenProject ServerConfig "{{ .Release.Name }}" has been successfully installed!
+
+🚀 This ServerConfig will be managed by the OpenProject Operator.
+
+📂 To view the ServerConfig:
+  kubectl get serverconfigs {{ .Values.name }} -n {{ .Release.Namespace }} -o yaml
+
+
+🗑️ To uninstall this ServerConfig:
+  helm uninstall {{ .Release.Name }} -n {{ .Release.Namespace }}
+
+💬 Happy automating OpenProject!
+{{- end }}

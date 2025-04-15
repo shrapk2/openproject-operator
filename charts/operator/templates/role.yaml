@@ -1,0 +1,38 @@
+# templates/role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ .Values.serviceAccount.name }}-role
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "secrets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups:
+    - openproject.org
+    resources:
+    - serverconfigs
+    - workpackages
+    verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+  - apiGroups:
+    - openproject.org
+    resources:
+    - serverconfigs/finalizers
+    - workpackages/finalizers
+    verbs:
+    - update
+  - apiGroups:
+    - openproject.org
+    resources:
+    - serverconfigs/status
+    - workpackages/status
+    verbs:
+    - get
+    - patch
+    - update

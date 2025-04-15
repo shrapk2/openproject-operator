@@ -1,0 +1,21 @@
+serverConfigReference:
+  name: openproject-dev
+
+workpackageDetails:
+  subject: Helm Default Ticket
+  description: |
+    This ticket was created by the Kubernetes OpenProject operator.
+    ## Markdown Header
+    * markdown bullet 
+    * markdown bullet
+
+    `extra credit code block`
+
+    ### Markdown Header 3
+    1. one
+    2. two
+    3. three
+  projectID: 4
+  typeID: 6
+  epicID: 338
+  schedule: "*/2 * * * *"

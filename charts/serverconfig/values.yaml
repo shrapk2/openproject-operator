@@ -1,0 +1,17 @@
+# This is to override the chart name.
+nameOverride: ""
+fullnameOverride: ""
+
+serverConfig:
+  server: https://project-dev.example.com
+
+apiSecret:
+  name: openproject-dev-api
+  key: token
+
+annotations: {}
+# example secret creation
+# kubectl create secret generic openproject-dev-api --from-literal=token=dGhvdWdodHRoaXN3YXNsZWdpdAo=
+# token value being base64 encoded
+# To create the API key: https://www.openproject.org/docs/api/
+#

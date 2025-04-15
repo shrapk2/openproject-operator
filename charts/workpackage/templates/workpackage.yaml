@@ -1,0 +1,21 @@
+apiVersion: openproject.org/v1alpha1
+kind: WorkPackages
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "openproject-workpackage.labels" . | nindent 4 }}
+  {{- with .Values.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}   
+spec:
+  serverConfigRef:
+    name: {{ .Values.serverConfigReference.name }}
+  subject: {{ .Values.workpackageDetails.subject | quote }}
+  description: |
+{{ .Values.workpackageDetails.description | indent 4 }}
+  schedule: {{ .Values.workpackageDetails.schedule | quote }}
+  projectID: {{ .Values.workpackageDetails.projectID }}
+  typeID: {{ .Values.workpackageDetails.typeID }}
+  epicID: {{ .Values.workpackageDetails.epicID }}

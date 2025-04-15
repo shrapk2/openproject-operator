@@ -1,0 +1,38 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-crd-check
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-delete-policy": hook-failed,hook-succeeded
+    "helm.sh/hook-weight": "5"
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 30
+  ttlSecondsAfterFinished: 30
+  template:
+    spec:
+      serviceAccountName: {{ .Release.Name }}-crd-check
+      restartPolicy: Never
+      containers:
+        - name: crd-check
+          image: bitnami/kubectl:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "✅ Checking for CRDs: workpackages.openproject.org and serverconfigs.openproject.org..."
+              if ! kubectl get crd workpackages.openproject.org > /dev/null 2>&1; then
+                echo "❌ CRD workpackages.openproject.org not found."
+                echo "💥 Please install the operator chart first or wait for CRDs to register."
+                exit 1
+              fi
+
+              if ! kubectl get crd serverconfigs.openproject.org > /dev/null 2>&1; then
+                echo "❌ CRD serverconfigs.openproject.org not found."
+                echo "💥 Please install the operator chart first or wait for CRDs to register."
+                exit 1
+              fi
+
+              echo "✅ All required CRDs are present."

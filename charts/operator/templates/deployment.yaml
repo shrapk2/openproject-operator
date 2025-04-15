@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "openproject-operator.fullname" . }}
+  labels:
+    app: {{ include "openproject-operator.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "openproject-operator.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "openproject-operator.name" . }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      containers:
+        - name: operator
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /manager
+          env:
+          - name: DEBUG
+            value: {{ .Values.debug | quote }}            

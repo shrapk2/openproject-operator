@@ -1,114 +1,155 @@
-# openproject-operator
-// TODO(user): Add simple overview of use/purpose
 
-## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+# OpenProject Operator
 
-## Getting Started
+The **OpenProject Operator** automates the creation and scheduling of tickets in an OpenProject server using Kubernetes Custom Resources. Designed for DevOps or engineering teams managing recurring work items, the operator creates and tracks tickets on a schedule you define through CRDs.
 
-### Prerequisites
-- go version v1.22.0+
-- docker version 17.03+.
-- kubectl version v1.11.3+.
-- Access to a Kubernetes v1.11.3+ cluster.
+## ✨ Features
 
-### To Deploy on the cluster
-**Build and push your image to the location specified by `IMG`:**
+- Declarative ticket creation using Kubernetes CRDs
+- Scheduled ticket generation via cron expressions
+- Helm-installable with pre-install CRD verification
+- Dynamic OpenProject server configuration via `ServerConfig`
+- Intelligent status tracking with last and next run timestamps
 
-```sh
-make docker-build docker-push IMG=<some-registry>/openproject-operator:tag
+## 📦 CRDs
+
+The operator defines two Custom Resource Definitions:
+
+- `ServerConfig` – Defines credentials and endpoint info for a given OpenProject instance.
+- `WorkPackages` – Represents a repeatable ticket definition with scheduling and linkage to an OpenProject project and type.
+
+### Example WorkPackage
+
+```yaml
+apiVersion: openproject.org/v1alpha1
+kind: WorkPackages
+metadata:
+  name: ticket-schedule-1
+  namespace: default
+spec:
+  serverConfigRef:
+    name: dev-server-01
+  subject: "Helm Default Ticket"
+  description: |
+    This ticket was created by the Kubernetes OpenProject operator.
+    ## Markdown Header
+    * markdown bullet 
+    * markdown bullet
+
+    `extra credit code block`
+
+    ### Markdown Header 3
+    1. one
+    2. two
+    3. three
+  schedule: "*/2 * * * *"
+  projectID: 4
+  typeID: 6
+  epicID: 338
 ```
 
-**NOTE:** This image ought to be published in the personal registry you specified.
-And it is required to have access to pull the image from the working environment.
-Make sure you have the proper permission to the registry if the above commands don’t work.
+## 🚀 Getting Started
 
-**Install the CRDs into the cluster:**
+### Prerequisites
+
+- Go 1.22+
+- Docker 20.10+
+- Kubernetes 1.24+
+- `kubectl` and `helm` installed and configured
+
+---
+
+### Build and Push Docker Image
+
+```sh
+make docker-build docker-push IMG=shrapk2/openproject-operator:<tag>
+```
+
+### Install CRDs
 
 ```sh
 make install
 ```
 
-**Deploy the Manager to the cluster with the image specified by `IMG`:**
+### Deploy the Operator
 
 ```sh
-make deploy IMG=<some-registry>/openproject-operator:tag
+make deploy IMG=shrapk2/openproject-operator:<tag>
 ```
 
-> **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin
-privileges or be logged in as admin.
+---
 
-**Create instances of your solution**
-You can apply the samples (examples) from the config/sample:
+## 🧠 Helm Chart Deployment
+
+The Helm chart is located in the `charts/operator/` directory. You can install the operator and its required resources using:
 
 ```sh
-kubectl apply -k config/samples/
+helm install openproject-operator charts/operator --set image.repository=shrapk2/openproject-operator --set image.tag=<tag>
 ```
 
->**NOTE**: Ensure that the samples has default values to test it out.
-
-### To Uninstall
-**Delete the instances (CRs) from the cluster:**
+Then deploy one or more `WorkPackages` using the companion Helm chart:
 
 ```sh
-kubectl delete -k config/samples/
+helm install ticket-schedule-1 charts/workpackage
 ```
 
-**Delete the APIs(CRDs) from the cluster:**
+### CRD Check Hook
+
+The Helm chart includes a pre-install hook to validate the presence of required CRDs (`ServerConfig`, `WorkPackages`) and will fail gracefully with an appropriate message if they are missing.
+
+---
+
+## 🐛 Debugging & Logging
+
+Set the following environment variable to enable verbose debugging:
 
 ```sh
-make uninstall
+DEBUG=true make run
 ```
 
-**UnDeploy the controller from the cluster:**
+In production, default logs are scoped with minimal context:
+
+- Name
+- Schedule
+- Status
+
+When `DEBUG` is enabled, the logs include payloads, headers, and reconciliation internals.
+
+---
+
+## 🧼 Uninstalling
 
 ```sh
 make undeploy
+make uninstall
 ```
 
-## Project Distribution
-
-Following are the steps to build the installer and distribute this project to users.
-
-1. Build the installer for the image built and published in the registry:
+Or via Helm:
 
 ```sh
-make build-installer IMG=<some-registry>/openproject-operator:tag
+helm uninstall openproject-operator
 ```
 
-NOTE: The makefile target mentioned above generates an 'install.yaml'
-file in the dist directory. This file contains all the resources built
-with Kustomize, which are necessary to install this project without
-its dependencies.
+---
 
-2. Using the installer
+## 💡 Contributing
 
-Users can just run kubectl apply -f <URL for YAML BUNDLE> to install the project, i.e.:
+Feature requests, PRs, and feedback are welcome! Please:
 
-```sh
-kubectl apply -f https://raw.githubusercontent.com/<org>/openproject-operator/<tag or branch>/dist/install.yaml
-```
+- Fork the repository
+- Create a feature branch
+- Run `make test` and `make vet`
+- Submit a PR with context
 
-## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
+---
 
-**NOTE:** Run `make help` for more information on all potential `make` targets
+## 📄 License
 
-More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
+Apache 2.0 — see [LICENSE](./LICENSE)
 
-## License
+---
 
-Copyright 2025.
+## 📚 Resources
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
+- [Kubebuilder Book](https://book.kubebuilder.io/)
+- [OpenProject REST API](https://docs.openproject.org/api/)

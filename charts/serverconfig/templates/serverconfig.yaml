@@ -1,0 +1,17 @@
+apiVersion: openproject.org/v1alpha1
+kind: ServerConfig
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "openproject-serverconfig.labels" . | nindent 4 }}
+  {{- with .Values.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}    
+spec:
+  server: {{ .Values.serverConfig.server | quote }}
+  apiKeySecretRef:
+    name: {{ .Values.apiSecret.name }}
+    key: {{ .Values.apiSecret.key }}
+

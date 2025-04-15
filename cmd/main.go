@@ -37,6 +37,7 @@ import (
 
 	openprojectorgv1alpha1 "github.com/shrapk2/openproject-operator/api/v1alpha1"
 	"github.com/shrapk2/openproject-operator/internal/controller"
+	"go.uber.org/zap/zapcore"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -69,9 +70,34 @@ func main() {
 		"If set, the metrics endpoint is served securely via HTTPS. Use --metrics-secure=false to use HTTP instead.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
+	// Configure a simplified logger
+	zapOpts := zapcore.EncoderConfig{
+		TimeKey:          "time",
+		LevelKey:         "level",
+		NameKey:          zapcore.OmitKey,
+		CallerKey:        zapcore.OmitKey,
+		FunctionKey:      zapcore.OmitKey,
+		MessageKey:       "message",
+		StacktraceKey:    "stacktrace",
+		LineEnding:       zapcore.DefaultLineEnding,
+		ConsoleSeparator: " ",
+		EncodeLevel:      zapcore.CapitalLevelEncoder,
+		EncodeTime:       zapcore.ISO8601TimeEncoder,
+		EncodeDuration:   zapcore.StringDurationEncoder,
+		EncodeCaller:     zapcore.ShortCallerEncoder,
+	}
+
 	opts := zap.Options{
 		Development: true,
+		EncoderConfigOptions: []zap.EncoderConfigOption{
+			func(ec *zapcore.EncoderConfig) {
+				*ec = zapOpts
+			},
+		},
+		// Disable stacktraces for all levels
+		StacktraceLevel: zapcore.PanicLevel,
 	}
+
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 

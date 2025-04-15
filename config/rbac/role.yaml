@@ -8,7 +8,6 @@ rules:
   - openproject.org
   resources:
   - serverconfigs
-  - workpackages
   verbs:
   - create
   - delete
@@ -21,14 +20,12 @@ rules:
   - openproject.org
   resources:
   - serverconfigs/finalizers
-  - workpackages/finalizers
   verbs:
   - update
 - apiGroups:
   - openproject.org
   resources:
   - serverconfigs/status
-  - workpackages/status
   verbs:
   - get
   - patch

@@ -1,0 +1,42 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ .Values.serviceAccount.name }}-manager
+rules:
+- apiGroups:
+  - openproject.org
+  resources:
+  - serverconfigs
+  - workpackages
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - openproject.org
+  resources:
+  - serverconfigs/finalizers
+  - workpackages/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - openproject.org
+  resources:
+  - serverconfigs/status
+  - workpackages/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups: [""]
+  resources:
+   - secrets
+  verbs: 
+   - get
+   - list
+   - watch

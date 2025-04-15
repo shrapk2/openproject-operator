@@ -1,0 +1,31 @@
+{{- if .Release.IsInstall }}
+🎉 OpenProject Operator has been successfully installed!
+
+📍 Namespace: {{ .Release.Namespace }}
+📦 Release Name: {{ .Release.Name }}
+
+🚀 The controller is now running and watching for:
+  - WorkPackage resources (openproject.org/v1alpha1)
+  - ServerConfig resources (openproject.org/v1alpha1)
+
+📂 Custom Resource Definitions (CRDs) installed:
+  - WorkPackages:    kubectl get workpackages.openproject.openproject.org
+  - ServerConfigs:   kubectl get serverconfigs.openproject.openproject.org
+
+🔍 To verify the operator is running:
+  kubectl get pods -n {{ .Release.Namespace }} -l app={{ include "openproject-operator.name" . }}
+
+🛠️ To create a new WorkPackage:
+  kubectl apply -f examples/workpackage.yaml
+
+🛠️ To define a server config:
+  kubectl apply -f examples/serverconfig.yaml
+
+💡 Tip:
+  Be sure to create a `ServerConfig` resource in the same namespace before submitting `WorkPackages`.
+
+🗑️ To uninstall:
+  helm uninstall {{ .Release.Name }} -n {{ .Release.Namespace }}
+
+Happy automating! ⚙️
+{{- end }}
