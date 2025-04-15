@@ -258,7 +258,7 @@ func buildTicketPayload(wp *v1alpha1.WorkPackages) map[string]interface{} {
 
 	// Process additional fields if present
 	// Check if Raw exists and has content
-	if wp.Spec.AdditionalFields.Raw.Raw != nil && len(wp.Spec.AdditionalFields.Raw.Raw) > 0 {
+	if len(wp.Spec.AdditionalFields.Raw.Raw) > 0 {
 		processAdditionalFields(payload, wp.Spec.AdditionalFields)
 	}
 

@@ -1,20 +1,31 @@
 replicaCount: 1
 debug: false
 image:
-  repository: shrapk2/openproject-operator
+  repository: docker.io/shrapk2
+  name: openproject-operator
   tag: v0.2.4
   pullPolicy: IfNotPresent
 
 serviceAccount:
   create: true
   name: openproject-operator
+  annotations: {}
 
 rbac:
   create: true
 
-resources: {}
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
 
 operator:
   DefaultRequeueTime: "720m"
   ShortRequeueTime: "900s"
   RequestTimeout: "90s"
+
+annotations: {}
+labels: {}

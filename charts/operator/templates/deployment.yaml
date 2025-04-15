@@ -11,13 +11,20 @@ spec:
       app: {{ include "openproject-operator.name" . }}
   template:
     metadata:
+      annotations:
+        {{- with .Values.annotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
       labels:
         app: {{ include "openproject-operator.name" . }}
+        {{- with .Values.labels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
       serviceAccountName: {{ .Values.serviceAccount.name }}
       containers:
         - name: operator
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.image.repository }}/{{ .Values.image.name }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
             - /manager
@@ -30,3 +37,5 @@ spec:
             value: {{ .Values.operator.ShortRequeueTime | quote }}
           - name: REQUEST_TIMEOUT
             value: {{ .Values.operator.RequestTimeout | quote }}
+      resources:
+        {{- toYaml .Values.resources | nindent 8 }}
