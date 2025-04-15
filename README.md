@@ -1,4 +1,3 @@
-
 # OpenProject Operator
 
 The **OpenProject Operator** automates the creation and scheduling of tickets in an OpenProject server using Kubernetes Custom Resources. Designed for DevOps or engineering teams managing recurring work items, the operator creates and tracks tickets on a schedule you define through CRDs.
@@ -81,16 +80,21 @@ make deploy IMG=shrapk2/openproject-operator:<tag>
 
 ## 🧠 Helm Chart Deployment
 
-The Helm chart is located in the `charts/operator/` directory. You can install the operator and its required resources using:
+The Helm charts are located in the `charts/` directory. You can install the operator and its required resources using:
 
 ```sh
-helm install openproject-operator charts/operator --set image.repository=shrapk2/openproject-operator --set image.tag=<tag>
+helm repo add openproject-operator https://shrapk2.github.io/openproject-operator
+helm repo update
+helm search repo openproject-operator
+#
+helm install openproject-operator openproject-operator/openproject-operator --set image.repository=shrapk2/openproject-operator --set image.tag=<tag>
 ```
 
 Then deploy one or more `WorkPackages` using the companion Helm chart:
 
 ```sh
-helm install ticket-schedule-1 charts/workpackage
+helm install dev-server-config openproject-operator/openproject-serverconfig
+helm install daily-workpackage-1 openproject-operator/openproject-workpackage
 ```
 
 ### CRD Check Hook
