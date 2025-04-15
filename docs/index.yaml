@@ -1,36 +1,36 @@
 apiVersion: v1
 entries:
   openproject-operator:
-  - apiVersion: v2
-    appVersion: v0.2.4
-    created: "2025-04-15T15:10:57.902734272-05:00"
-    description: OpenProject Kubernetes Operator
-    digest: 81d7261895219634af07df070049c18be5b10a5ca1c50a17d2e9c841cf83e3ff
-    name: openproject-operator
-    type: application
-    urls:
-    - https://www.github.io/shrapk2/openproject-operator/openproject-operator-0.1.5.tgz
-    version: 0.1.5
+    - apiVersion: v2
+      appVersion: v0.2.4
+      created: "2025-04-15T15:10:57.902734272-05:00"
+      description: OpenProject Kubernetes Operator
+      digest: 81d7261895219634af07df070049c18be5b10a5ca1c50a17d2e9c841cf83e3ff
+      name: openproject-operator
+      type: application
+      urls:
+        - https://shrapk2.github.io/openproject-operator/openproject-operator-0.1.5.tgz
+      version: 0.1.5
   openproject-serverconfig:
-  - apiVersion: v2
-    appVersion: v0.2.4
-    created: "2025-04-15T15:10:57.902871939-05:00"
-    description: A Helm chart for Kubernetes
-    digest: 51e919d920247bf42c7e9524696b725d767002eb8f3e40671375a9a2beae0ea3
-    name: openproject-serverconfig
-    type: application
-    urls:
-    - https://www.github.io/shrapk2/openproject-operator/openproject-serverconfig-0.1.1.tgz
-    version: 0.1.1
+    - apiVersion: v2
+      appVersion: v0.2.4
+      created: "2025-04-15T15:10:57.902871939-05:00"
+      description: A Helm chart for Kubernetes
+      digest: 51e919d920247bf42c7e9524696b725d767002eb8f3e40671375a9a2beae0ea3
+      name: openproject-serverconfig
+      type: application
+      urls:
+        - https://shrapk2.github.io/openproject-operator/openproject-serverconfig-0.1.1.tgz
+      version: 0.1.1
   openproject-workpackage:
-  - apiVersion: v2
-    appVersion: v0.2.4
-    created: "2025-04-15T15:10:57.903692892-05:00"
-    description: A Helm chart to deploy OpenProject WorkPackages
-    digest: b5b17a59b0cdcbbe7d55682db2dfec713f69e0ffcdc73612dfc1ca20cae8d452
-    name: openproject-workpackage
-    type: application
-    urls:
-    - https://www.github.io/shrapk2/openproject-operator/openproject-workpackage-0.1.1.tgz
-    version: 0.1.1
+    - apiVersion: v2
+      appVersion: v0.2.4
+      created: "2025-04-15T15:10:57.903692892-05:00"
+      description: A Helm chart to deploy OpenProject WorkPackages
+      digest: b5b17a59b0cdcbbe7d55682db2dfec713f69e0ffcdc73612dfc1ca20cae8d452
+      name: openproject-workpackage
+      type: application
+      urls:
+        - https://shrapk2.github.io/openproject-operator/openproject-workpackage-0.1.1.tgz
+      version: 0.1.1
 generated: "2025-04-15T15:10:57.90244702-05:00"
