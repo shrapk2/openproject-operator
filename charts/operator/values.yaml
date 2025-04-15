@@ -2,7 +2,7 @@ replicaCount: 1
 debug: false
 image:
   repository: shrapk2/openproject-operator
-  tag: v0.2.2
+  tag: latest
   pullPolicy: IfNotPresent
 
 serviceAccount:
