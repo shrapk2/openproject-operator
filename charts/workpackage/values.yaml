@@ -1,18 +1,20 @@
 annotations:
   workcenter: openproject
 
-daily:
-  - name: Example 1 Daily
-    description: |
-      Example WorkPackage for daily issue creation.
+# these do not technically need to be broken down by daily/monthly/quarterly/annually since it's processed based on the schedule, but added for clarity
 
-      * markdown bullet 
-      * markdown bullet
-    schedule: "0 0 * * *"
-    projectID: 4
-    typeID: 6
-    epicID: 338
-    serverConfigRef: example-serverconfig-ref-1
+# daily:
+#   - name: Example 1 Daily
+#     description: |
+#       Example WorkPackage for daily issue creation.
+
+#       * markdown bullet
+#       * markdown bullet
+#     schedule: "0 0 * * *"
+#     projectID: 4
+#     typeID: 6
+#     epicID: 338
+#     serverConfigRef: example-serverconfig-ref-1
 
 annually:
   - name: Example 1 Annual
