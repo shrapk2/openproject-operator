@@ -1,6 +1,5 @@
 annotations:
   workcenter: openproject
-
 # these do not technically need to be broken down by daily/monthly/quarterly/annually since it's processed based on the schedule, but added for clarity
 
 # daily:
@@ -16,65 +15,65 @@ annotations:
 #     epicID: 338
 #     serverConfigRef: example-serverconfig-ref-1
 
-annually:
-  - name: Example 1 Annual
-    description: |
-      # Example WorkPackage for annually issue creation.
+# annually:
+#   - name: Example 1 Annual
+#     description: |
+#       # Example WorkPackage for annually issue creation.
 
-      1. markdown 1
-      2. markdown 2
-    schedule: "0 0 1 2 *"
-    projectID: 4
-    typeID: 6
-    epicID: 338
-    serverConfigRef: example-serverconfig-ref-2
+#       1. markdown 1
+#       2. markdown 2
+#     schedule: "0 0 1 2 *"
+#     projectID: 4
+#     typeID: 6
+#     epicID: 338
+#     serverConfigRef: example-serverconfig-ref-2
 
-quarterly:
-  - name: Example 1 Quarterly
-    description: |
-      # Example WorkPackage for quarterly issue creation.
+# quarterly:
+#   - name: Example 1 Quarterly
+#     description: |
+#       # Example WorkPackage for quarterly issue creation.
 
-      `code line`
-    schedule: "0 0 1 1,4,7,10 *"
-    projectID: 4
-    typeID: 6
-    epicID: 338
-    serverConfigRef: example-serverconfig-ref-1
-  - name: Example 2 Quarterly
-    description: |
-      # Example WorkPackage for quarterly issue creation.
+#       `code line`
+#     schedule: "0 0 1 1,4,7,10 *"
+#     projectID: 4
+#     typeID: 6
+#     epicID: 338
+#     serverConfigRef: example-serverconfig-ref-1
+#   - name: Example 2 Quarterly
+#     description: |
+#       # Example WorkPackage for quarterly issue creation.
 
-      ```bash
-      echo "Hello, World!"
-      ```
-    schedule: "0 0 1 1,4,7,10 *"
-    projectID: 4
-    typeID: 6
-    epicID: 338
-    serverConfigRef: example-serverconfig-ref-1
-  - name: Example 3 Quarterly
-    description: |
-      # Example WorkPackage for quarterly issue creation.
-    schedule: "0 0 1 1,4,7,10 *"
-    projectID: 4
-    typeID: 6
-    epicID: 338
-    serverConfigRef: example-serverconfig-ref-1
+#       ```bash
+#       echo "Hello, World!"
+#       ```
+#     schedule: "0 0 1 1,4,7,10 *"
+#     projectID: 4
+#     typeID: 6
+#     epicID: 338
+#     serverConfigRef: example-serverconfig-ref-1
+#   - name: Example 3 Quarterly
+#     description: |
+#       # Example WorkPackage for quarterly issue creation.
+#     schedule: "0 0 1 1,4,7,10 *"
+#     projectID: 4
+#     typeID: 6
+#     epicID: 338
+#     serverConfigRef: example-serverconfig-ref-1
 
-monthly:
-  - name: Example 1 Monthly
-    description: |
-      # Example WorkPackage for monthly issue creation.
-    schedule: "0 0 1 * *"
-    projectID: 4
-    typeID: 6
-    epicID: 338
-    serverConfigRef: example-serverconfig-ref-1
-  - name: Example 2 Monthly
-    description: |
-      # Example WorkPackage for monthly issue creation.
-    schedule: "0 0 1 * *"
-    projectID: 4
-    typeID: 6
-    epicID: 338
-    serverConfigRef: example-serverconfig-ref-1
+# monthly:
+#   - name: Example 1 Monthly
+#     description: |
+#       # Example WorkPackage for monthly issue creation.
+#     schedule: "0 0 1 * *"
+#     projectID: 4
+#     typeID: 6
+#     epicID: 338
+#     serverConfigRef: example-serverconfig-ref-1
+#   - name: Example 2 Monthly
+#     description: |
+#       # Example WorkPackage for monthly issue creation.
+#     schedule: "0 0 1 * *"
+#     projectID: 4
+#     typeID: 6
+#     epicID: 338
+#     serverConfigRef: example-serverconfig-ref-1
