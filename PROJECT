@@ -4,29 +4,39 @@
 # More info: https://book.kubebuilder.io/reference/project-config.html
 domain: openproject.org
 layout:
-- go.kubebuilder.io/v4
+  - go.kubebuilder.io/v4
+multigroup: true
 plugins:
   manifests.sdk.operatorframework.io/v2: {}
   scorecard.sdk.operatorframework.io/v2: {}
 projectName: openproject-operator
 repo: github.com/shrapk2/openproject-operator
 resources:
-- api:
-    crdVersion: v1
-    namespaced: true
-  controller: true
-  domain: openproject.org
-  group: openproject
-  kind: WorkPackage
-  path: github.com/shrapk2/openproject-operator/api/v1alpha1
-  version: v1alpha1
-- api:
-    crdVersion: v1
-    namespaced: true
-  controller: true
-  domain: openproject.org
-  group: openproject
-  kind: OpenProjectConfig
-  path: github.com/shrapk2/openproject-operator/api/v1alpha1
-  version: v1alpha1
+  - api:
+      crdVersion: v1
+      namespaced: true
+    controller: true
+    domain: openproject.org
+    group: openproject
+    kind: WorkPackage
+    path: github.com/shrapk2/openproject-operator/api/v1alpha1
+    version: v1alpha1
+  - api:
+      crdVersion: v1
+      namespaced: true
+    controller: true
+    domain: openproject.org
+    group: openproject
+    kind: OpenProjectConfig
+    path: github.com/shrapk2/openproject-operator/api/v1alpha1
+    version: v1alpha1
+  - api:
+      crdVersion: v1
+      namespaced: true
+    controller: true
+    domain: openproject.org
+    group: openproject
+    kind: CloudInventory
+    path: github.com/shrapk2/openproject-operator/api/v1alpha1
+    version: v1alpha1
 version: "3"

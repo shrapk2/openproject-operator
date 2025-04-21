@@ -4,6 +4,7 @@
 resources:
 - bases/openproject.org_workpackages.yaml
 - bases/openproject.org_serverconfigs.yaml
+- bases/openproject.org_cloudinventories.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches:
@@ -15,6 +16,7 @@ patches:
 # patches here are for enabling the CA injection for each CRD
 #- path: patches/cainjection_in_workpackages.yaml
 #- path: patches/cainjection_in_serverconfigs.yaml
+#- path: patches/cainjection_in_cloudinventories.yaml
 # +kubebuilder:scaffold:crdkustomizecainjectionpatch
 
 # [WEBHOOK] To enable webhook, uncomment the following section

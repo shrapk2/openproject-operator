@@ -35,9 +35,10 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	"go.uber.org/zap/zapcore"
+
 	openprojectorgv1alpha1 "github.com/shrapk2/openproject-operator/api/v1alpha1"
 	"github.com/shrapk2/openproject-operator/internal/controller"
-	"go.uber.org/zap/zapcore"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -182,6 +183,13 @@ func main() {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ServerConfig")
+		os.Exit(1)
+	}
+	if err = (&controller.CloudInventoryReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "CloudInventory")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

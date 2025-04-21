@@ -1,20 +1,19 @@
----
+# permissions for end users to view cloudinventories.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: manager-role
+  labels:
+    app.kubernetes.io/name: openproject-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: cloudinventory-viewer-role
 rules:
 - apiGroups:
   - openproject.org
   resources:
   - cloudinventories
   verbs:
-  - create
-  - delete
   - get
   - list
-  - patch
-  - update
   - watch
 - apiGroups:
   - openproject.org
@@ -22,5 +21,3 @@ rules:
   - cloudinventories/status
   verbs:
   - get
-  - patch
-  - update

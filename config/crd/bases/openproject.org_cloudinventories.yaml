@@ -1,0 +1,69 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.16.1
+  name: cloudinventories.openproject.org
+spec:
+  group: openproject.org
+  names:
+    kind: CloudInventory
+    listKind: CloudInventoryList
+    plural: cloudinventories
+    singular: cloudinventory
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: CloudInventory is the Schema for the cloudinventories API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: CloudInventorySpec defines the desired state of CloudInventory
+            properties:
+              filter:
+                description: Filter is an optional label filter for resources
+                type: string
+              region:
+                description: Region is the cloud region to inventory
+                type: string
+            required:
+            - region
+            type: object
+          status:
+            description: CloudInventoryStatus defines the observed state of CloudInventory
+            properties:
+              itemCount:
+                description: ItemCount is how many resources we found
+                type: integer
+              lastRunTime:
+                description: LastRunTime is the last time the inventory ran
+                format: date-time
+                type: string
+              message:
+                description: Message holds any human-readable status info
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
