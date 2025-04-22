@@ -39,28 +39,182 @@ spec:
           spec:
             description: CloudInventorySpec defines the desired state of CloudInventory
             properties:
+              aws:
+                description: AWS-specific inventory options (required if Mode == "aws")
+                properties:
+                  assumeRoleARN:
+                    type: string
+                  credentialsSecretRef:
+                    description: SecretKeySelector selects a key of a Secret.
+                    properties:
+                      key:
+                        description: The key of the secret to select from.  Must be
+                          a valid secret key.
+                        type: string
+                      name:
+                        default: ""
+                        description: |-
+                          Name of the referent.
+                          This field is effectively required, but due to backwards compatibility is
+                          allowed to be empty. Instances of this type with an empty value here are
+                          almost certainly wrong.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                      optional:
+                        description: Specify whether the Secret or its key must be
+                          defined
+                        type: boolean
+                    required:
+                    - key
+                    type: object
+                    x-kubernetes-map-type: atomic
+                  region:
+                    description: Global region override (if not provided in secret)
+                    type: string
+                  resources:
+                    items:
+                      type: string
+                    type: array
+                  tagFilter:
+                    description: 'Optional: tag filter (e.g., "Environment=prod")'
+                    type: string
+                required:
+                - resources
+                type: object
               filter:
-                description: Filter is an optional label filter for resources
+                description: |-
+                  Filter is an optional label/tag filter
+                  e.g., for AWS: "tag:Environment=prod", for K8s: "app=frontend"
                 type: string
-              region:
-                description: Region is the cloud region to inventory
+              kubernetes:
+                description: Kubernetes-specific inventory options (required if Mode
+                  == "kubernetes")
+                properties:
+                  kubeconfigSecretRef:
+                    description: 'Optional: reference to a Secret that contains a
+                      kubeconfig for a remote cluster'
+                    properties:
+                      key:
+                        description: The key of the secret to select from.  Must be
+                          a valid secret key.
+                        type: string
+                      name:
+                        default: ""
+                        description: |-
+                          Name of the referent.
+                          This field is effectively required, but due to backwards compatibility is
+                          allowed to be empty. Instances of this type with an empty value here are
+                          almost certainly wrong.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                      optional:
+                        description: Specify whether the Secret or its key must be
+                          defined
+                        type: boolean
+                    required:
+                    - key
+                    type: object
+                    x-kubernetes-map-type: atomic
+                  labelSelector:
+                    type: string
+                  namespaces:
+                    items:
+                      type: string
+                    type: array
+                type: object
+              mode:
+                description: 'Mode specifies the inventory mode: "aws" or "kubernetes"'
+                enum:
+                - aws
+                - kubernetes
                 type: string
             required:
-            - region
+            - mode
             type: object
           status:
             description: CloudInventoryStatus defines the observed state of CloudInventory
             properties:
+              containerImages:
+                description: Images is a deduplicated list of container images (kubernetes
+                  mode only)
+                items:
+                  properties:
+                    cluster:
+                      type: string
+                    image:
+                      type: string
+                    repository:
+                      type: string
+                    sha:
+                      type: string
+                    version:
+                      type: string
+                  required:
+                  - cluster
+                  - image
+                  - repository
+                  - version
+                  type: object
+                type: array
+              ec2:
+                items:
+                  properties:
+                    az:
+                      type: string
+                    imageId:
+                      type: string
+                    instanceId:
+                      type: string
+                    name:
+                      type: string
+                    platform:
+                      type: string
+                    privateDns:
+                      type: string
+                    privateIp:
+                      type: string
+                    publicIp:
+                      type: string
+                    state:
+                      type: string
+                    tags:
+                      additionalProperties:
+                        type: string
+                      type: object
+                    type:
+                      type: string
+                    vpcId:
+                      type: string
+                  required:
+                  - az
+                  - imageId
+                  - instanceId
+                  - name
+                  - platform
+                  - privateDns
+                  - privateIp
+                  - publicIp
+                  - state
+                  - tags
+                  - type
+                  - vpcId
+                  type: object
+                type: array
               itemCount:
-                description: ItemCount is how many resources we found
+                description: ItemCount is the total number of resources discovered
                 type: integer
               lastRunTime:
-                description: LastRunTime is the last time the inventory ran
+                description: LastRunTime is the last time the inventory job ran
                 format: date-time
                 type: string
               message:
-                description: Message holds any human-readable status info
+                description: Message is a summary or error message
                 type: string
+              summary:
+                additionalProperties:
+                  type: integer
+                description: Summary contains per-service or per-namespace counts
+                type: object
             type: object
         type: object
     served: true

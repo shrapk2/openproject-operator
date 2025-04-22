@@ -12,6 +12,9 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
 	"github.com/go-logr/logr"
 	"github.com/robfig/cron/v3"
 	v1alpha1 "github.com/shrapk2/openproject-operator/api/v1alpha1"
@@ -233,12 +236,39 @@ func processAdditionalFields(payload map[string]interface{}, additionalFields v1
 }
 
 // buildTicketPayload constructs the payload for creating a ticket
-func buildTicketPayload(wp *v1alpha1.WorkPackages) map[string]interface{} {
+func (r *WorkPackageReconciler) buildTicketPayload(
+	ctx context.Context,
+	wp *v1alpha1.WorkPackages,
+	log logr.Logger,
+) (map[string]interface{}, error) {
+	var reportMarkdown string
+
+	inventory, err := r.loadInventory(ctx, wp, log)
+	if err != nil {
+		log.Error(err, "❌ Failed to load CloudInventory")
+		return nil, err
+	}
+
+	// if inventory != nil && len(inventory.Status.ContainerImages) > 0 {
+	// 	reportMarkdown = buildInventoryMarkdownReport(inventory)
+	// }
+
+	if inventory != nil {
+		reportMarkdown = buildInventoryMarkdownReport(inventory)
+	}
+
+	fullDescription := wp.Spec.Description
+	if reportMarkdown != "" {
+		// fullDescription += fmt.Sprintf("\n\n_Inventory Reference: `%s`_\n", wp.Spec.InventoryRef.Name)
+
+		fullDescription += fmt.Sprintf("\n\n_Inventory Reference: `%s`_\n", wp.Spec.InventoryRef.Name) + reportMarkdown
+	}
+
 	payload := map[string]interface{}{
 		"subject": wp.Spec.Subject,
 		"description": map[string]string{
 			"format": "markdown",
-			"raw":    wp.Spec.Description,
+			"raw":    fullDescription,
 		},
 		"_links": map[string]interface{}{
 			"project": map[string]string{
@@ -256,16 +286,14 @@ func buildTicketPayload(wp *v1alpha1.WorkPackages) map[string]interface{} {
 		}
 	}
 
-	// Process additional fields if present
-	// Check if Raw exists and has content
 	if len(wp.Spec.AdditionalFields.Raw.Raw) > 0 {
 		processAdditionalFields(payload, wp.Spec.AdditionalFields)
 	}
 
-	return payload
+	return payload, nil
 }
 
-// extractID extracts the ticket ID from an HTTP response
+// // extractID extracts the ticket ID from an HTTP response
 func extractID(resp *http.Response) string {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -281,6 +309,86 @@ func extractID(resp *http.Response) string {
 		return fmt.Sprintf("%v", id)
 	}
 	return ""
+}
+func buildInventoryMarkdownReport(inv *v1alpha1.CloudInventory) string {
+	var b strings.Builder
+	b.WriteString("## Cloud Inventory Report\n")
+
+	// Kubernetes inventory
+	if len(inv.Status.ContainerImages) > 0 {
+		b.WriteString("### Kubernetes Images:\n")
+		for _, img := range inv.Status.ContainerImages {
+			b.WriteString(fmt.Sprintf("- `%s`\n", img.Image))
+		}
+		b.WriteString("\n")
+
+		cluster := inv.Status.ContainerImages[0].Cluster
+		b.WriteString(fmt.Sprintf("- Cluster: `%s`\n", cluster))
+		b.WriteString(fmt.Sprintf("- Total Pods: `%d`\n", inv.Status.Summary["pods"]))
+		b.WriteString(fmt.Sprintf("- Unique Images: `%d`\n\n", inv.Status.Summary["images"]))
+
+		b.WriteString("#### Images:\n")
+		for _, img := range inv.Status.ContainerImages {
+			b.WriteString(fmt.Sprintf("- `%s`\n", img.Image))
+			b.WriteString(fmt.Sprintf("  - Repo: `%s`\n", img.Repository))
+			b.WriteString(fmt.Sprintf("  - Tag: `%s`\n", img.Version))
+			if img.SHA != "" {
+				b.WriteString(fmt.Sprintf("  - SHA256: `%s`\n", img.SHA))
+			}
+		}
+		b.WriteString("\n")
+
+		b.WriteString("#### CSV Summary\n")
+		b.WriteString("```\n")
+		b.WriteString("cluster,image,repository,version,sha\n")
+		for _, img := range inv.Status.ContainerImages {
+			b.WriteString(fmt.Sprintf("%s,%s,%s,%s,%s\n",
+				img.Cluster,
+				img.Image,
+				img.Repository,
+				img.Version,
+				img.SHA,
+			))
+		}
+		b.WriteString("```\n")
+	}
+
+	// EC2 inventory
+	if len(inv.Status.EC2) > 0 {
+		b.WriteString("\n### AWS EC2 Inventory\n")
+		b.WriteString("#### Summary\n")
+		// Count instance states
+		// Total number of EC2 instances
+		total := len(inv.Status.EC2)
+		b.WriteString(fmt.Sprintf("- Total Instances: `%d`\n", total))
+		stateCounts := make(map[string]int)
+		for _, inst := range inv.Status.EC2 {
+			state := strings.ToLower(inst.State)
+			stateCounts[state]++
+		}
+
+		for state, count := range stateCounts {
+			b.WriteString(fmt.Sprintf("- %s: `%d`\n", cases.Title(language.Und).String(state), count))
+		}
+
+		b.WriteString("#### CSV Summary\n")
+		b.WriteString("```\n")
+		b.WriteString("Name,InstanceID,State,Type,AZ,Platform,PublicIP,PrivateDNS,PrivateIP,ImageID,VPCID,Tags\n")
+		for _, inst := range inv.Status.EC2 {
+			b.WriteString(fmt.Sprintf("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%v\n",
+				inst.Name, inst.InstanceID, inst.State, inst.Type, inst.AZ, inst.Platform,
+				inst.PublicIP, inst.PrivateDNS, inst.PrivateIP, inst.ImageID, inst.VPCID, inst.Tags,
+			))
+		}
+		b.WriteString("```\n")
+	}
+
+	// Fallback message if nothing was found
+	if len(inv.Status.ContainerImages) == 0 && len(inv.Status.EC2) == 0 {
+		b.WriteString(fmt.Sprintf("\n_No inventory results found for `%s`._\n", inv.Name))
+	}
+
+	return b.String()
 }
 
 // shouldRunNow determines if it's time to create a ticket
@@ -335,7 +443,16 @@ func (r *WorkPackageReconciler) handleCreateTicket(ctx context.Context, wp *v1al
 	statusLog(log, "🔄", "Creating new ticket", "subject", wp.Spec.Subject)
 
 	// Build the payload
-	payload := buildTicketPayload(wp)
+	payload, err := r.buildTicketPayload(ctx, wp, log)
+	if err != nil {
+		log.Error(err, "❌ Failed to build ticket payload")
+		return ctrl.Result{}, err
+	}
+	if err != nil {
+		log.Error(err, "❌ Failed to build ticket payload")
+		return ctrl.Result{}, err
+	}
+
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		log.Error(err, "❌ Failed to marshal JSON payload")
@@ -477,4 +594,19 @@ func (r *WorkPackageReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.WorkPackages{}).
 		Complete(r)
+}
+
+func (r *WorkPackageReconciler) loadInventory(ctx context.Context, wp *v1alpha1.WorkPackages, log logr.Logger) (*v1alpha1.CloudInventory, error) {
+	if wp.Spec.InventoryRef == nil {
+		return nil, nil
+	}
+
+	var inv v1alpha1.CloudInventory
+	key := client.ObjectKey{Namespace: wp.Namespace, Name: wp.Spec.InventoryRef.Name}
+	if err := r.Client.Get(ctx, key, &inv); err != nil {
+		log.Error(err, "❌ Failed to load CloudInventory", "name", wp.Spec.InventoryRef.Name)
+		return nil, err
+	}
+
+	return &inv, nil
 }
