@@ -360,20 +360,30 @@ func buildInventoryMarkdownReport(inv *v1alpha1.CloudInventory) string {
 		// Count instance states
 		// Total number of EC2 instances
 		total := len(inv.Status.EC2)
-		b.WriteString(fmt.Sprintf("- Total Instances: `%d`\n", total))
 		stateCounts := make(map[string]int)
 		for _, inst := range inv.Status.EC2 {
 			state := strings.ToLower(inst.State)
 			stateCounts[state]++
 		}
 
+		b.WriteString(fmt.Sprintf("- Total Instances: `%d`\n", total))
+		if running, ok := stateCounts["running"]; ok {
+			b.WriteString(fmt.Sprintf("- Running: `%d`\n", running))
+		}
+		if stopped, ok := stateCounts["stopped"]; ok {
+			b.WriteString(fmt.Sprintf("- Stopped: `%d`\n", stopped))
+		}
+
+		// Print all other states (optional, dynamic)
 		for state, count := range stateCounts {
-			b.WriteString(fmt.Sprintf("- %s: `%d`\n", cases.Title(language.Und).String(state), count))
+			if state != "running" && state != "stopped" {
+				b.WriteString(fmt.Sprintf("- %s: `%d`\n", cases.Title(language.Und).String(state), count))
+			}
 		}
 
 		b.WriteString("#### CSV Summary\n")
 		b.WriteString("```\n")
-		b.WriteString("Name,InstanceID,State,Type,AZ,Platform,PublicIP,PrivateDNS,PrivateIP,ImageID,VPCID,Tags\n")
+		b.WriteString("Name,InstanceID,State,Type,AvailabilityZone,Platform,PublicIP,PrivateDNS,PrivateIP,ImageID,VPCId,Tags\n")
 		for _, inst := range inv.Status.EC2 {
 			b.WriteString(fmt.Sprintf("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%v\n",
 				inst.Name, inst.InstanceID, inst.State, inst.Type, inst.AZ, inst.Platform,

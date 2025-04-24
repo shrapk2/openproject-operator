@@ -4,7 +4,7 @@ metadata:
   name: openproject-dev
   namespace: default
 spec:
-  server: https://project-dev.armedia.us
+  server: https://project-dev.example.com
   apiKeySecretRef:
     name: openproject-api
     key: token
