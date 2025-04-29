@@ -10,9 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 )
 
-// DefaultTags defines the tags to extract for EC2 instances
-var DefaultTags = []string{"RPO(Hours)", "RTO(Hours)", "ClientName", "Customer"}
-
 type EC2InstanceInfo struct {
 	Name       string
 	InstanceID string
@@ -85,8 +82,6 @@ func InventoryEC2Instances(ctx context.Context, cfg aws.Config, tagFilter string
 			results = append(results, instance)
 		}
 	}
-
-	// Optional: Lookup EIPs here and patch ElasticIP (next step)
 
 	return results, nil
 }

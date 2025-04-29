@@ -1,0 +1,42 @@
+{{ include "includeCloudInventoryAws" . }}
+
+{{- define "includeCloudInventoryAws" -}}
+{{- $data := dict "root" . "timeBlock" "workpackages" "Values" .Values }}
+{{- include "renderCloudInventoryAws" $data }}
+{{- end -}}
+
+{{- define "renderCloudInventoryAws" -}}
+{{- $root := .root }}
+{{- $timeBlock := .timeBlock }}
+{{- $invs := .Values.inventories }}
+{{- if $invs }}
+{{- range $idx, $item := $invs }}
+  {{- if eq $item.mode "aws" }}
+---
+apiVersion: openproject.org/v1alpha1
+kind: CloudInventory
+metadata:
+  name: {{ printf "%s-%s-aws-%s" $root.Release.Name (lower $timeBlock) (lower ($item.name | replace " " "-")) | trunc 63 | trimSuffix "-" }}
+  namespace: {{ $root.Release.Namespace }}
+  labels:
+    {{- include "openproject-workpackage.labels" $root | nindent 4 }}
+spec:
+  mode: aws
+  aws:
+    {{- if $item.aws.secretAccessKeySecretRef }}
+    credentialsSecretRef:
+      name: {{ $item.aws.secretAccessKeySecretRef.name }}
+    {{- end }}
+    {{- if $item.aws.region }}
+    region: {{ $item.aws.region | quote }}
+    {{- end }}
+    {{- if $item.aws.resources }}
+    resources:
+      {{- range $item.aws.resources }}
+      - {{ . | quote }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

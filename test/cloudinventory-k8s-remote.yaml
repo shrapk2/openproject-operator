@@ -1,10 +1,12 @@
-# cloudinventory.yaml
 apiVersion: openproject.org/v1alpha1
 kind: CloudInventory
 metadata:
-  name: local-k8s-inventory
+  name: inventory-remote-k8s-cluster
   namespace: default
 spec:
   mode: kubernetes
   kubernetes:
+    kubeconfigSecretRef:
+      name: test-remote-kubeconfig
+      key: config
     namespaces: []

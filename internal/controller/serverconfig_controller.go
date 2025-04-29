@@ -32,7 +32,7 @@ func getScopedServerConfigLogger(ctx context.Context, config *openprojectv1alpha
 // +kubebuilder:rbac:groups=openproject.org,resources=serverconfigs/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=openproject.org,resources=serverconfigs/finalizers,verbs=update
 func (r *ServerConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// 🔍 List all ServerConfigs in the same namespace
+	// List all ServerConfigs in the same namespace
 	var configs openprojectv1alpha1.ServerConfigList
 	if err := r.List(ctx, &configs, client.InNamespace(req.Namespace)); err != nil {
 		// Create a minimal logger for error reporting when we can't get the config
@@ -41,7 +41,7 @@ func (r *ServerConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, err
 	}
 
-	// ✅ Get the current ServerConfig
+	// Get the current ServerConfig
 	var config openprojectv1alpha1.ServerConfig
 	if err := r.Get(ctx, req.NamespacedName, &config); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)

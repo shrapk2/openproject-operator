@@ -134,86 +134,21 @@ spec:
           status:
             description: CloudInventoryStatus defines the observed state of CloudInventory
             properties:
-              containerImages:
-                description: Images is a deduplicated list of container images (kubernetes
-                  mode only)
-                items:
-                  properties:
-                    cluster:
-                      type: string
-                    image:
-                      type: string
-                    repository:
-                      type: string
-                    sha:
-                      type: string
-                    version:
-                      type: string
-                  required:
-                  - cluster
-                  - image
-                  - repository
-                  - version
-                  type: object
-                type: array
-              ec2:
-                items:
-                  properties:
-                    az:
-                      type: string
-                    imageId:
-                      type: string
-                    instanceId:
-                      type: string
-                    name:
-                      type: string
-                    platform:
-                      type: string
-                    privateDns:
-                      type: string
-                    privateIp:
-                      type: string
-                    publicIp:
-                      type: string
-                    state:
-                      type: string
-                    tags:
-                      additionalProperties:
-                        type: string
-                      type: object
-                    type:
-                      type: string
-                    vpcId:
-                      type: string
-                  required:
-                  - az
-                  - imageId
-                  - instanceId
-                  - name
-                  - platform
-                  - privateDns
-                  - privateIp
-                  - publicIp
-                  - state
-                  - tags
-                  - type
-                  - vpcId
-                  type: object
-                type: array
               itemCount:
-                description: ItemCount is the total number of resources discovered
                 type: integer
+              lastFailedTime:
+                format: date-time
+                type: string
+              lastRunSuccess:
+                type: boolean
               lastRunTime:
-                description: LastRunTime is the last time the inventory job ran
                 format: date-time
                 type: string
               message:
-                description: Message is a summary or error message
                 type: string
               summary:
                 additionalProperties:
                   type: integer
-                description: Summary contains per-service or per-namespace counts
                 type: object
             type: object
         type: object

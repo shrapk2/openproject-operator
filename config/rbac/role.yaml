@@ -5,6 +5,13 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+- apiGroups:
   - openproject.org
   resources:
   - cloudinventories
@@ -24,3 +31,12 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - openproject.org
+  resources:
+  - cloudinventoryreports
+  verbs:
+  - create
+  - get
+  - list
+  - watch

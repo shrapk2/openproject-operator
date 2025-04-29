@@ -1,12 +1,10 @@
+# Local = Cluster Running this Operator
 apiVersion: openproject.org/v1alpha1
 kind: CloudInventory
 metadata:
-  name: inventory-remote-k8s-cluster
+  name: local-k8s-inventory
   namespace: default
 spec:
   mode: kubernetes
   kubernetes:
-    kubeconfigSecretRef:
-      name: remote-kubeconfig
-      key: config
     namespaces: []

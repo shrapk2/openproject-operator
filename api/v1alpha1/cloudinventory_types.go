@@ -5,21 +5,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type EC2InstanceInfo struct {
-	Name       string            `json:"name"`
-	InstanceID string            `json:"instanceId"`
-	State      string            `json:"state"`
-	Type       string            `json:"type"`
-	AZ         string            `json:"az"`
-	Platform   string            `json:"platform"`
-	PublicIP   string            `json:"publicIp"`
-	PrivateDNS string            `json:"privateDns"`
-	PrivateIP  string            `json:"privateIp"`
-	ImageID    string            `json:"imageId"`
-	VPCID      string            `json:"vpcId"`
-	Tags       map[string]string `json:"tags"`
-}
-
 // CloudInventorySpec defines the desired state of CloudInventory
 type CloudInventorySpec struct {
 	// Mode specifies the inventory mode: "aws" or "kubernetes"
@@ -74,27 +59,25 @@ type ContainerImageInfo struct {
 
 // CloudInventoryStatus defines the observed state of CloudInventory
 type CloudInventoryStatus struct {
-	// LastRunTime is the last time the inventory job ran
 	// +optional
 	LastRunTime metav1.Time `json:"lastRunTime,omitempty"`
-
-	// ItemCount is the total number of resources discovered
+	// +optional
+	LastFailedTime *metav1.Time `json:"lastFailedTime,omitempty"`
+	LastRunSuccess bool         `json:"lastRunSuccess,omitempty"`
 	// +optional
 	ItemCount int `json:"itemCount,omitempty"`
-
-	// Message is a summary or error message
 	// +optional
 	Message string `json:"message,omitempty"`
-
-	// Summary contains per-service or per-namespace counts
 	// +optional
 	Summary map[string]int `json:"summary,omitempty"`
 
-	// Images is a deduplicated list of container images (kubernetes mode only)
+	// Kubernetes
 	// +optional
-	ContainerImages []ContainerImageInfo `json:"containerImages,omitempty"`
+	// ContainerImages []ContainerImageInfo `json:"containerImages,omitempty"`
 
-	EC2 []EC2InstanceInfo `json:"ec2,omitempty"`
+	// // AWS specific inventory results
+	// EC2 []EC2InstanceInfo `json:"ec2,omitempty"`
+	// RDS []RDSInstanceInfo `json:"rds,omitempty"`
 }
 
 // +kubebuilder:object:root=true

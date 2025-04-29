@@ -11,3 +11,10 @@ spec:
       key: config
     resources:
       - ec2
+      - rds
+      - elbv2
+      - s3
+      - eip
+      - ecr
+      - natgateways
+      - internetgateways

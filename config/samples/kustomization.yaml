@@ -6,4 +6,6 @@ resources:
 - _v1alpha1_serverconfig.yaml
 - v1alpha1_cloudinventory.yaml
 - _v1alpha1_cloudinventory.yaml
+- v1alpha1_cloudinventoryreport.yaml
+- _v1alpha1_cloudinventoryreport.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples

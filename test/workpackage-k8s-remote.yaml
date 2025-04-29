@@ -19,12 +19,12 @@ spec:
     1. one
     2. two
     3. three
-  schedule: "*/5 * * * *" # every 2 minutes
+  schedule: "*/5 * * * *"
   projectID: 4
   typeID: 6
   epicID: 338
   inventoryRef:
-    name: inventory-remote-cluster
+    name: inventory-remote-k8s-cluster
   # additionalFields:
   #   customField1: "custom field 1"
   #   customField2: "custom field 2"

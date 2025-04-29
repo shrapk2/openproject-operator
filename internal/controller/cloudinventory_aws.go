@@ -3,6 +3,8 @@ package controller
 import (
 	"context"
 	"fmt"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -22,6 +24,15 @@ import (
 
 // reconcileAWS handles AWS inventory logic
 func (r *CloudInventoryReconciler) reconcileAWS(ctx context.Context, ci *v1alpha1.CloudInventory, log logr.Logger) (ctrl.Result, error) {
+
+	original := ci.DeepCopy()
+
+	// Avoid retry storm on repeated failure
+	if ci.Status.LastFailedTime != nil && time.Since(ci.Status.LastFailedTime.Time) < 30*time.Second && !ci.Status.LastRunSuccess {
+		log.Info("🛑 Skipping AWS inventory due to recent failure, requeued")
+		return ctrl.Result{RequeueAfter: 30 * time.Minute}, nil
+	}
+
 	if ci.Spec.AWS == nil {
 		err := fmt.Errorf("AWS config is missing in spec")
 		log.Error(err, "cannot reconcile AWS")
@@ -34,66 +45,154 @@ func (r *CloudInventoryReconciler) reconcileAWS(ctx context.Context, ci *v1alpha
 
 	awsConfig, accountID, err := r.buildAWSConfig(ctx, ci, log)
 	if err != nil {
-		return ctrl.Result{}, err
+		log.Error(err, "Failed to build AWS config")
+		ci.Status.LastFailedTime = &metav1.Time{Time: time.Now()}
+		_ = r.Status().Patch(ctx, ci, client.MergeFrom(original))
+		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 	}
 
-	// Placeholder: call out to real inventory functions per service
+	// summary counts and raw inventories
 	summary := make(map[string]int)
-	var ec2Instances []awsinventory.EC2InstanceInfo
+	rawResults := make(map[string]interface{})
 
+	// Loop through monitored services defined in common.go
 	for _, svc := range ci.Spec.AWS.Resources {
-		switch svc {
-		case "ec2":
-			var err error
-			ec2Instances, err = awsinventory.InventoryEC2Instances(ctx, *awsConfig, ci.Spec.AWS.TagFilter)
-			if err != nil {
-				log.Error(err, "EC2 inventory failed")
-				continue
+		lower := strings.ToLower(svc)
+		handled := false
+		for _, info := range monitoredServices {
+			if strings.ToLower(info.Name) == lower {
+				items, err := info.Inventory(ctx, *awsConfig, ci.Spec.AWS.TagFilter)
+				if err != nil {
+					log.Error(err, fmt.Sprintf("%s inventory failed", info.Name))
+					ci.Status.LastFailedTime = &metav1.Time{Time: time.Now()}
+					_ = r.Status().Patch(ctx, ci, client.MergeFrom(original))
+					return ctrl.Result{RequeueAfter: 30 * time.Minute}, nil
+				}
+				summary[lower] = info.Count(items)
+				rawResults[lower] = items
+				handled = true
+				break
 			}
-			summary["ec2"] = len(ec2Instances)
-		default:
-			summary[svc] = simulateAWSInventory(svc)
+		}
+		if !handled {
+			summary[lower] = simulateAWSInventory(lower)
 		}
 	}
 
-	itemCount := 0
-	for _, count := range summary {
-		itemCount += count
+	// Convert raw results into v1alpha1 types
+	converted := make(map[string]interface{})
+	for _, info := range monitoredServices {
+		key := strings.ToLower(info.Name)
+		if raw, ok := rawResults[key]; ok {
+			converted[key] = info.Convert(raw)
+		}
 	}
 
-	// Patch status
-	original := ci.DeepCopy()
-	// Convert ec2Instances to the appropriate type
-	var convertedEC2Instances []v1alpha1.EC2InstanceInfo
-	for _, instance := range ec2Instances {
-		convertedEC2Instances = append(convertedEC2Instances, v1alpha1.EC2InstanceInfo{
-			Name:       instance.Name,
-			InstanceID: instance.InstanceID,
-			State:      instance.State,
-			Type:       instance.Type,
-			AZ:         instance.AZ,
-			Platform:   instance.Platform,
-			PublicIP:   instance.PublicIP,
-			PrivateDNS: instance.PrivateDNS,
-			PrivateIP:  instance.PrivateIP,
-			ImageID:    instance.ImageID,
-			VPCID:      instance.VPCID,
-			Tags:       instance.Tags,
-		})
-
+	// Fetch the most recent report
+	var reports v1alpha1.CloudInventoryReportList
+	if err := r.List(ctx, &reports, client.InNamespace(ci.Namespace)); err == nil {
+		var latestReport *v1alpha1.CloudInventoryReport
+		for _, rep := range reports.Items {
+			if rep.Spec.SourceRef.Name == ci.Name {
+				if latestReport == nil || rep.CreationTimestamp.After(latestReport.CreationTimestamp.Time) {
+					latestReport = &rep
+				}
+			}
+		}
+		if latestReport != nil {
+			if time.Since(latestReport.CreationTimestamp.Time) < 2*time.Minute {
+				log.Info("🛑 Skipping report creation — last report is recent", "age", time.Since(latestReport.CreationTimestamp.Time))
+				ci.Status.LastRunTime = metav1.Now()
+				ci.Status.Message = "Recent inventory already reported"
+				_ = r.Status().Patch(ctx, ci, client.MergeFrom(original))
+				return ctrl.Result{}, nil
+			}
+		}
 	}
-	ci.Status.EC2 = convertedEC2Instances
-	ci.Status.ItemCount = itemCount
-	ci.Status.Summary = summary
+
+	// Create the CloudInventoryReport without Status first
+	report := &v1alpha1.CloudInventoryReport{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: ci.Name + "-" + "aws" + "-",
+			Namespace:    ci.Namespace,
+		},
+		Spec: v1alpha1.CloudInventoryReportSpec{
+			SourceRef: corev1.ObjectReference{
+				Name:       ci.Name,
+				Namespace:  ci.Namespace,
+				Kind:       "CloudInventory",
+				APIVersion: "openproject.org/v1alpha1",
+			},
+			Timestamp: metav1.Now(),
+		},
+	}
+
+	// Create the report resource first
+	if err := r.Create(ctx, report); err != nil {
+		log.Error(err, "Failed to create CloudInventoryReport")
+		ci.Status.LastFailedTime = &metav1.Time{Time: time.Now()}
+		_ = r.Status().Patch(ctx, ci, client.MergeFrom(original))
+		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
+	}
+
+	log.Info("Created empty CloudInventoryReport", "name", report.Name)
+
+	reportCopy := report.DeepCopy()
+	report.Status = v1alpha1.CloudInventoryReportStatus{
+		Summary: summary,
+	}
+	reportStatusValue := reflect.ValueOf(&report.Status).Elem()
+	for _, svc := range monitoredServices {
+		key := strings.ToLower(svc.Name)
+		if data, exists := converted[key]; exists {
+			// Get the field by name (EC2, RDS, ELBV2, etc.)
+			field := reportStatusValue.FieldByName(svc.Name)
+
+			// Skip if the field doesn't exist in the struct
+			if !field.IsValid() {
+				log.Info("Skipping unknown field in report status", "field", svc.Name)
+				continue
+			}
+
+			// Convert data to reflect.Value and set it on the field
+			dataValue := reflect.ValueOf(data)
+			if field.Type() == dataValue.Type() {
+				field.Set(dataValue)
+			} else {
+				log.Info("Type mismatch for field", "field", svc.Name,
+					"expectedType", field.Type().String(),
+					"gotType", dataValue.Type().String())
+			}
+		}
+	}
+
+	if err := r.Status().Patch(ctx, report, client.MergeFrom(reportCopy)); err != nil {
+		log.Error(err, "failed to patch CloudInventoryReport status", "name", report.Name)
+		ci.Status.LastFailedTime = &metav1.Time{Time: time.Now()}
+		_ = r.Status().Patch(ctx, ci, client.MergeFrom(original))
+		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
+	}
+
+	log.Info("✅ CloudInventoryReport created and status patched", "name", report.Name)
+
+	ci.Status.LastFailedTime = nil
 	ci.Status.LastRunTime = metav1.Now()
+	ci.Status.LastRunSuccess = true
+	ci.Status.ItemCount = 0
+	for _, cnt := range summary {
+		ci.Status.ItemCount += cnt
+	}
+	ci.Status.Summary = summary
 	ci.Status.Message = fmt.Sprintf("AWS Inventory complete for account %s", accountID)
 
+	log.Info("AWS Inventory Summary", "summary", ci.Status.Summary)
+
 	if err := r.Status().Patch(ctx, ci, client.MergeFrom(original)); err != nil {
-		log.Error(err, "failed to patch EC2 inventory status")
+		log.Error(err, "Failed to patch AWS inventory status")
 		return ctrl.Result{}, err
 	}
 
-	return ctrl.Result{RequeueAfter: time.Minute * 10}, nil
+	return ctrl.Result{RequeueAfter: 5 * time.Minute}, nil
 }
 
 // buildAWSConfig constructs an AWS config from a secret or IRSA
@@ -121,6 +220,9 @@ func (r *CloudInventoryReconciler) buildAWSConfig(ctx context.Context, ci *v1alp
 			config.WithCredentialsProvider(
 				credentials.NewStaticCredentialsProvider(accessKey, secretKeyVal, ""),
 			),
+			config.WithRetryer(func() aws.Retryer {
+				return awsinventory.NewCustomRetryer()
+			}),
 		)
 		if err != nil {
 			return nil, "", fmt.Errorf("failed to load AWS config: %w", err)
