@@ -50,6 +50,21 @@ spec:
               epicID:
                 description: EpicID is the parent work package ID (optional)
                 type: integer
+              inventoryRef:
+                description: InventoryRef is an optional reference to a CloudInventory
+                  to run/report
+                properties:
+                  name:
+                    default: ""
+                    description: |-
+                      Name of the referent.
+                      This field is effectively required, but due to backwards compatibility is
+                      allowed to be empty. Instances of this type with an empty value here are
+                      almost certainly wrong.
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                    type: string
+                type: object
+                x-kubernetes-map-type: atomic
               projectID:
                 description: ProjectID is the numeric ID of the OpenProject project
                 type: integer

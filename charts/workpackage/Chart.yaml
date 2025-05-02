@@ -1,8 +1,16 @@
 apiVersion: v2
 name: openproject-workpackage
-description: A Helm chart to deploy OpenProject WorkPackages
+description: |
+  A Helm chart to deploy OpenProject WorkPackages and Inventory items. If using the inventory specifications, ensure these prerequisites are met:
+    * Secret for the AWS account  (for AWS-based inventories) - `secretAccessKeySecretRef`
+      * This secret contains the following items:
+        * AWS Region: `aws_region`
+        * AWS Account ID: `aws_account_id`
+        * AWS Access Key ID: `aws_access_key_id` (optional, AssumeRole can be used)
+        * AWS Secret Access Key: `aws_secret_access_key` (optional, AssumeRole can be used)
+    * Secret for the Kubeconfig (for Kubernetes-based inventories) - `kubeconfigSecretRef`
 type: application
-version: 0.1.1
-appVersion: "v0.2.4"
+version: 0.3.0
+appVersion: "v0.3.0"
 ## Sample install
 ## helm upgrade workpackage-dev-1 . -f ./path/to/values.yaml --install -n openproject --take-ownership

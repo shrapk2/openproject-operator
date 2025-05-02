@@ -2,13 +2,12 @@
 {{ include "includeCloudInventoryK8s" . }}
 
 {{- define "includeCloudInventoryK8s" -}}
-{{- $data := dict "root" . "timeBlock" "workpackages" "Values" .Values }}
+{{- $data := dict "root" . "Values" .Values }}
 {{- include "renderCloudInventoryK8s" $data }}
 {{- end -}}
 
 {{- define "renderCloudInventoryK8s" -}}
 {{- $root := .root }}
-{{- $timeBlock := .timeBlock }}
 {{- $invs := .Values.inventories }}
 {{- if $invs }}
 {{- range $idx, $item := $invs }}
@@ -17,7 +16,7 @@
 apiVersion: openproject.org/v1alpha1
 kind: CloudInventory
 metadata:
-  name: {{ printf "%s-%s-k8s-%s" $root.Release.Name (lower $timeBlock) (lower ($item.name | replace " " "-")) | trunc 63 | trimSuffix "-" }}
+  name: {{ printf "%s" (lower ($item.name | replace " " "-")) | trunc 63 | trimSuffix "-" }}
   namespace: {{ $root.Release.Namespace }}
   labels:
     {{- include "openproject-workpackage.labels" $root | nindent 4 }}

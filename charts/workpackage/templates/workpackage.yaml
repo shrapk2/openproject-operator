@@ -21,7 +21,7 @@
 apiVersion: openproject.org/v1alpha1
 kind: WorkPackages
 metadata:
-  name: {{ printf "%s-%s-%s" $root.Release.Name (lower $timeBlock) (lower ($item.name | replace " " "-")) | trunc 63 | trimSuffix "-" }}
+  name: {{ printf "%s-%s-%s" $root.Release.Name (lower $timeBlock) (lower ($item.subject | replace " " "-")) | trunc 63 | trimSuffix "-" }}
   namespace: {{ $root.Release.Namespace }}
   labels:
     {{- include "openproject-workpackage.labels" $root | nindent 4 }}
@@ -36,6 +36,7 @@ spec:
   projectID: {{ $item.projectID }}
   typeID:    {{ $item.typeID }}
   epicID:    {{ $item.epicID }}
+  subject:   {{ $item.subject }}
 
   {{- if $item.description }}
   description: |
@@ -44,7 +45,7 @@ spec:
 
   {{- if $item.inventoryRef }}
   inventoryRef:
-    name: {{ range $inv := $invs }}{{ if eq $inv.name $item.inventoryRef }}{{ printf "%s-%s-%s" $root.Release.Name (lower $timeBlock) (lower ($inv.name | replace " " "-")) | trunc 63 | trimSuffix "-" }}{{ end }}{{ end }}
+    name: {{ $item.inventoryRef }}
   {{- end }}
 {{- end }}
 {{- end }}

@@ -3,7 +3,7 @@ debug: false
 image:
   repository: docker.io/shrapk2
   name: openproject-operator
-  tag: v0.2.4
+  tag: v0.3.1
   pullPolicy: IfNotPresent
 
 serviceAccount:

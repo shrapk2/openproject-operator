@@ -17,6 +17,8 @@ rules:
   resources:
   - serverconfigs
   - workpackages
+  - cloudinventories
+  - cloudinventoryreports  
   verbs:
   - create
   - delete
@@ -37,6 +39,8 @@ rules:
   resources:
   - serverconfigs/status
   - workpackages/status
+  - cloudinventories/status
+  - cloudinventoryreports/status
   verbs:
   - get
   - patch
@@ -44,6 +48,9 @@ rules:
 - apiGroups: [""]
   resources:
    - secrets
+   - pods
+   - namespaces
+   - services
   verbs: 
    - get
    - list

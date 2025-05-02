@@ -267,7 +267,8 @@ func (r *WorkPackageReconciler) buildTicketPayload(
 	}
 
 	payload := map[string]interface{}{
-		"subject": wp.Spec.Subject,
+		// "subject": wp.Spec.Subject,
+		"subject": fmt.Sprintf("%s %s", time.Now().Format("January"), wp.Spec.Subject),
 		"description": map[string]string{
 			"format": "markdown",
 			"raw":    fullDescription,

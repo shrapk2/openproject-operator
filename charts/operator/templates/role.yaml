@@ -20,6 +20,8 @@ rules:
     resources:
     - serverconfigs
     - workpackages
+    - cloudinventories
+    - cloudinventoryreports    
     verbs:
     - create
     - delete
@@ -40,6 +42,8 @@ rules:
     resources:
     - serverconfigs/status
     - workpackages/status
+    - cloudinventories/status
+    - cloudinventoryreports/status
     verbs:
     - get
     - patch
