@@ -2,6 +2,38 @@ annotations:
   workcenter: openproject
 # these do not technically need to be broken down by daily/monthly/quarterly/annually since it's processed based on the schedule, but added for clarity
 
+# inventories:
+#   - name: example-k8s-local
+#     description: |
+#       Example Inventory for WorkPackage creation.
+#     mode: kubernetes
+#     namespaces:
+#       - default
+#   - name: example-k8s-remote
+#     description: |
+#       Example Inventory for WorkPackage creation.
+#     mode: kubernetes
+#     kubeconfigSecretRef:
+#       name: example-kubeconfig-secret
+#       key: kubeconfig
+#     namespaces: []
+#   - name: example-aws-1
+#     description: |
+#       Example AWS Inventory for WorkPackage creation.
+#     mode: aws
+#     aws:
+#       secretAccessKeySecretRef:
+#         name: example-secret
+#     resources:
+#         - ec2
+#         - rds
+#         - elbv2
+#         - s3
+#         - eip
+#         - ecr
+#         - natgateways
+#         - internetgateways
+
 # daily:
 #   - name: Example 1 Daily
 #     description: |
@@ -14,19 +46,31 @@ annotations:
 #     typeID: 6
 #     epicID: 338
 #     serverConfigRef: example-serverconfig-ref-1
-
-# annually:
-#   - name: Example 1 Annual
+#     inventoryRef: example-k8s-local
+#   - name: Example 2 Daily
 #     description: |
-#       # Example WorkPackage for annually issue creation.
+#       Example WorkPackage for daily issue creation.
 
-#       1. markdown 1
-#       2. markdown 2
-#     schedule: "0 0 1 2 *"
+#       * markdown bullet
+#       * markdown bullet
+#     schedule: "0 0 * * *"
 #     projectID: 4
 #     typeID: 6
 #     epicID: 338
-#     serverConfigRef: example-serverconfig-ref-2
+#     serverConfigRef: example-serverconfig-ref-1
+#     inventoryRef: example-k8s-remote
+# # annually:
+# #   - name: Example 1 Annual
+# #     description: |
+# #       # Example WorkPackage for annually issue creation.
+
+# #       1. markdown 1
+# #       2. markdown 2
+# #     schedule: "0 0 1 2 *"
+# #     projectID: 4
+# #     typeID: 6
+# #     epicID: 338
+# #     serverConfigRef: example-serverconfig-ref-2
 
 # quarterly:
 #   - name: Example 1 Quarterly
@@ -77,3 +121,4 @@ annotations:
 #     typeID: 6
 #     epicID: 338
 #     serverConfigRef: example-serverconfig-ref-1
+#     inventoryRef: example-aws-1

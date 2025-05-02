@@ -1,0 +1,158 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.16.1
+  name: cloudinventories.openproject.org
+spec:
+  group: openproject.org
+  names:
+    kind: CloudInventory
+    listKind: CloudInventoryList
+    plural: cloudinventories
+    singular: cloudinventory
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: CloudInventory is the Schema for the cloudinventories API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: CloudInventorySpec defines the desired state of CloudInventory
+            properties:
+              aws:
+                description: AWS-specific inventory options (required if Mode == "aws")
+                properties:
+                  assumeRoleARN:
+                    type: string
+                  credentialsSecretRef:
+                    description: SecretKeySelector selects a key of a Secret.
+                    properties:
+                      key:
+                        description: The key of the secret to select from.  Must be
+                          a valid secret key.
+                        type: string
+                      name:
+                        default: ""
+                        description: |-
+                          Name of the referent.
+                          This field is effectively required, but due to backwards compatibility is
+                          allowed to be empty. Instances of this type with an empty value here are
+                          almost certainly wrong.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                      optional:
+                        description: Specify whether the Secret or its key must be
+                          defined
+                        type: boolean
+                    required:
+                    - key
+                    type: object
+                    x-kubernetes-map-type: atomic
+                  region:
+                    description: Global region override (if not provided in secret)
+                    type: string
+                  resources:
+                    items:
+                      type: string
+                    type: array
+                  tagFilter:
+                    description: 'Optional: tag filter (e.g., "Environment=prod")'
+                    type: string
+                required:
+                - resources
+                type: object
+              filter:
+                description: |-
+                  Filter is an optional label/tag filter
+                  e.g., for AWS: "tag:Environment=prod", for K8s: "app=frontend"
+                type: string
+              kubernetes:
+                description: Kubernetes-specific inventory options (required if Mode
+                  == "kubernetes")
+                properties:
+                  kubeconfigSecretRef:
+                    description: 'Optional: reference to a Secret that contains a
+                      kubeconfig for a remote cluster'
+                    properties:
+                      key:
+                        description: The key of the secret to select from.  Must be
+                          a valid secret key.
+                        type: string
+                      name:
+                        default: ""
+                        description: |-
+                          Name of the referent.
+                          This field is effectively required, but due to backwards compatibility is
+                          allowed to be empty. Instances of this type with an empty value here are
+                          almost certainly wrong.
+                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        type: string
+                      optional:
+                        description: Specify whether the Secret or its key must be
+                          defined
+                        type: boolean
+                    required:
+                    - key
+                    type: object
+                    x-kubernetes-map-type: atomic
+                  labelSelector:
+                    type: string
+                  namespaces:
+                    items:
+                      type: string
+                    type: array
+                type: object
+              mode:
+                description: 'Mode specifies the inventory mode: "aws" or "kubernetes"'
+                enum:
+                - aws
+                - kubernetes
+                type: string
+            required:
+            - mode
+            type: object
+          status:
+            description: CloudInventoryStatus defines the observed state of CloudInventory
+            properties:
+              itemCount:
+                type: integer
+              lastFailedTime:
+                format: date-time
+                type: string
+              lastRunSuccess:
+                type: boolean
+              lastRunTime:
+                format: date-time
+                type: string
+              message:
+                type: string
+              summary:
+                additionalProperties:
+                  type: integer
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

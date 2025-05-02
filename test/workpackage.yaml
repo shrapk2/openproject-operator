@@ -1,12 +1,12 @@
 apiVersion: openproject.org/v1alpha1
 kind: WorkPackages
 metadata:
-  name: test-ticket
+  name: test-ticket-schedule-1
   namespace: default
 spec:
   serverConfigRef:
     name: openproject-dev
-  subject: "Operator-created-Ticket-4"
+  subject: "test-ticket-schedule-1"
   description: |
     This ticket was created by the Kubernetes operator running locally.
     ## Markdown Header
@@ -19,11 +19,11 @@ spec:
     1. one
     2. two
     3. three
-  schedule: "*/2 * * * *" # every 2 minutes
+  schedule: "*/5 * * * *"
   projectID: 4
   typeID: 6
   epicID: 338
-  # additionalFields:
+  # additionalFields:  ## TBD Extension Work
   #   customField1: "custom field 1"
   #   customField2: "custom field 2"
   #   customField3: "custom field 3"

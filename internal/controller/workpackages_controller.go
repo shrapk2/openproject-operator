@@ -30,9 +30,12 @@ const (
 	StatusFailed    = "Failed"
 )
 
+// Constants for index field source reference names
+const IndexFieldSourceRefName = "spec.sourceRef.name"
+
 var (
 	// Debug mode configuration
-	debugEnabled = os.Getenv("DEBUG") == "true"
+	// debugEnabled = os.Getenv("DEBUG") == "true"
 
 	// Time configurations with environment variables and defaults
 	DefaultRequeueTime = getDurationFromEnv("DEFAULT_REQUEUE_TIME", time.Minute*1)
@@ -100,22 +103,22 @@ type WorkPackageReconciler struct {
 }
 
 // maybeBase64 makes a best guess if a string is base64 encoded
-func maybeBase64(s string) bool {
-	// Quick check for base64 patterns
-	if len(s) == 0 || len(s)%4 != 0 {
-		return false
-	}
+// func maybeBase64(s string) bool {
+// 	// Quick check for base64 patterns
+// 	if len(s) == 0 || len(s)%4 != 0 {
+// 		return false
+// 	}
 
-	// Check if it contains only valid base64 characters
-	for _, c := range s {
-		if !((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
-			(c >= '0' && c <= '9') || c == '+' || c == '/' || c == '=') {
-			return false
-		}
-	}
+// 	// Check if it contains only valid base64 characters
+// 	for _, c := range s {
+// 		if !((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+// 			(c >= '0' && c <= '9') || c == '+' || c == '/' || c == '=') {
+// 			return false
+// 		}
+// 	}
 
-	return true
-}
+// 	return true
+// }
 
 // makeOpenProjectRequest creates and executes an OpenProject API request
 func makeOpenProjectRequest(ctx context.Context, method, url, apiKey string, payload []byte) (*http.Response, error) {
@@ -233,12 +236,42 @@ func processAdditionalFields(payload map[string]interface{}, additionalFields v1
 }
 
 // buildTicketPayload constructs the payload for creating a ticket
-func buildTicketPayload(wp *v1alpha1.WorkPackages) map[string]interface{} {
+func (r *WorkPackageReconciler) buildTicketPayload(
+	ctx context.Context,
+	wp *v1alpha1.WorkPackages,
+	log logr.Logger,
+) (map[string]interface{}, error) {
+	var reportMarkdown string
+
+	report, logs, err := r.triggerCloudInventoryScan(ctx, wp, log)
+	if err != nil {
+		log.Error(err, "❌ Cloud inventory scan failed")
+		reportMarkdown = "_Cloud inventory scan failed._\n"
+	} else if report != nil {
+		reportMarkdown = BuildInventoryMarkdownReport(report)
+	}
+
+	fullDescription := wp.Spec.Description
+
+	if reportMarkdown != "" {
+		fullDescription += fmt.Sprintf("\n\n_Inventory Reference: `%s`_\n", wp.Spec.InventoryRef.Name) + reportMarkdown
+	}
+
+	// add logs if debug is enabled
+	if debugEnabled {
+		fmt.Printf("Debug logs: %v\n", logs)
+
+		if len(logs) > 0 {
+			reportMarkdown += "\n---\n#### Inventory Diagnostics\n```\n" + strings.Join(logs, "\n") + "\n```\n"
+		}
+	}
+
 	payload := map[string]interface{}{
-		"subject": wp.Spec.Subject,
+		// "subject": wp.Spec.Subject,
+		"subject": fmt.Sprintf("%s %s", time.Now().Format("January"), wp.Spec.Subject),
 		"description": map[string]string{
 			"format": "markdown",
-			"raw":    wp.Spec.Description,
+			"raw":    fullDescription,
 		},
 		"_links": map[string]interface{}{
 			"project": map[string]string{
@@ -256,16 +289,14 @@ func buildTicketPayload(wp *v1alpha1.WorkPackages) map[string]interface{} {
 		}
 	}
 
-	// Process additional fields if present
-	// Check if Raw exists and has content
 	if len(wp.Spec.AdditionalFields.Raw.Raw) > 0 {
 		processAdditionalFields(payload, wp.Spec.AdditionalFields)
 	}
 
-	return payload
+	return payload, nil
 }
 
-// extractID extracts the ticket ID from an HTTP response
+// // extractID extracts the ticket ID from an HTTP response
 func extractID(resp *http.Response) string {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -281,6 +312,103 @@ func extractID(resp *http.Response) string {
 		return fmt.Sprintf("%v", id)
 	}
 	return ""
+}
+func (r *WorkPackageReconciler) triggerCloudInventoryScan(ctx context.Context, wp *v1alpha1.WorkPackages, log logr.Logger) (*v1alpha1.CloudInventoryReport, []string, error) {
+	if wp.Spec.InventoryRef == nil {
+		return nil, nil, nil
+	}
+
+	// Fetch the CloudInventory resource
+	var inv v1alpha1.CloudInventory
+	var logs []string
+	if err := r.Get(ctx, client.ObjectKey{Name: wp.Spec.InventoryRef.Name, Namespace: wp.Namespace}, &inv); err != nil {
+		msg := "❌ Failed to fetch CloudInventory: " + err.Error()
+		log.Error(err, msg)
+		logs = append(logs, msg)
+		return nil, logs, err
+	}
+	logs = append(logs, fmt.Sprintf("Found CloudInventory: %s (mode: %s)", inv.Name, inv.Spec.Mode))
+
+	// Prepare the reconciler
+	cloudRec := &CloudInventoryReconciler{Client: r.Client, Scheme: r.Scheme}
+	var err error
+
+	// Dispatch based on Mode or which spec is present
+	switch inv.Spec.Mode {
+	case "aws":
+		_, err = cloudRec.reconcileAWS(ctx, &inv, log)
+	case "kubernetes":
+		_, err = cloudRec.reconcileKubernetes(ctx, &inv, log)
+	default:
+		if inv.Spec.AWS != nil {
+			_, err = cloudRec.reconcileAWS(ctx, &inv, log)
+		} else if inv.Spec.Kubernetes != nil {
+			_, err = cloudRec.reconcileKubernetes(ctx, &inv, log)
+		} else {
+			// No inventory spec defined; skip silently
+			logs = append(logs, "No AWS or Kubernetes inventory spec defined; skipping")
+			return nil, logs, nil
+		}
+	}
+
+	if err != nil {
+		msg := "❌ Failed to run CloudInventory scan: " + err.Error()
+		log.Error(err, msg)
+		logs = append(logs, msg)
+		return nil, logs, err
+	}
+
+	var latest *v1alpha1.CloudInventoryReport
+	for i := 0; i < 12; i++ { // Wait up to 2 minutes total (12 * 10s)
+		time.Sleep(10 * time.Second)
+
+		report, err := r.loadLatestInventoryReport(ctx, wp, log)
+		if err != nil {
+			msg := "⚠ Failed to load inventory report: " + err.Error()
+			log.Error(err, msg)
+			logs = append(logs, msg)
+			continue
+		}
+
+		if report != nil {
+			// Kubernetes: check if the report is ready
+			if inv.Spec.Mode == "kubernetes" || (inv.Spec.Mode == "" && inv.Spec.Kubernetes != nil) {
+				log.Info("✅ Kubernetes inventory report ready",
+					"name", report.Name,
+					"pods", report.Status.Summary["pods"],
+					"images", len(report.Status.ContainerImages),
+				)
+				return report, logs, nil
+			}
+			// AWS: check if any service has data
+			hasData := false
+			logParams := []interface{}{}
+
+			for _, service := range monitoredServices {
+				count := service.GetCount(report)
+				logParams = append(logParams, service.LogName, count)
+				if count > 0 {
+					hasData = true
+				}
+			}
+
+			if hasData {
+				log.Info("✅ Found populated CloudInventoryReport", logParams...)
+				latest = report
+				break
+			}
+		}
+
+		log.Info("⌛ Waiting for populated inventory report...")
+	}
+
+	if latest == nil {
+		msg := "⚠ Inventory report found but had no data — fallback to last known or return empty"
+		log.Info(msg)
+		logs = append(logs, msg)
+	}
+
+	return latest, logs, nil
 }
 
 // shouldRunNow determines if it's time to create a ticket
@@ -335,7 +463,16 @@ func (r *WorkPackageReconciler) handleCreateTicket(ctx context.Context, wp *v1al
 	statusLog(log, "🔄", "Creating new ticket", "subject", wp.Spec.Subject)
 
 	// Build the payload
-	payload := buildTicketPayload(wp)
+	payload, err := r.buildTicketPayload(ctx, wp, log)
+	if err != nil {
+		log.Error(err, "❌ Failed to build ticket payload")
+		return ctrl.Result{}, err
+	}
+	if err != nil {
+		log.Error(err, "❌ Failed to build ticket payload")
+		return ctrl.Result{}, err
+	}
+
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		log.Error(err, "❌ Failed to marshal JSON payload")
@@ -474,7 +611,103 @@ func (r *WorkPackageReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *WorkPackageReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), &v1alpha1.CloudInventoryReport{},
+		IndexFieldSourceRefName, func(obj client.Object) []string {
+			report := obj.(*v1alpha1.CloudInventoryReport)
+			return []string{report.Spec.SourceRef.Name}
+		}); err != nil {
+		return err
+	}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.WorkPackages{}).
 		Complete(r)
+}
+
+func (r *WorkPackageReconciler) loadLatestInventoryReport(ctx context.Context, wp *v1alpha1.WorkPackages, log logr.Logger) (*v1alpha1.CloudInventoryReport, error) {
+	if wp.Spec.InventoryRef == nil {
+		return nil, nil
+	}
+
+	var reports v1alpha1.CloudInventoryReportList
+	if err := r.List(ctx, &reports, client.InNamespace(wp.Namespace),
+		client.MatchingFields{IndexFieldSourceRefName: wp.Spec.InventoryRef.Name}); err != nil {
+		log.Error(err, "❌ Failed to list inventory reports", "name", wp.Spec.InventoryRef.Name)
+		return nil, err
+	}
+
+	if len(reports.Items) == 0 {
+		log.Info("⚠ No inventory reports found", "inventory", wp.Spec.InventoryRef.Name)
+		return nil, nil
+	}
+
+	// Pick latest by timestamp
+	latest := reports.Items[0]
+	for _, r := range reports.Items {
+		if r.Spec.Timestamp.After(latest.Spec.Timestamp.Time) {
+			latest = r
+		}
+	}
+
+	// Determine mode by fetching the CloudInventory CR
+	var inv v1alpha1.CloudInventory
+	if err := r.Get(ctx, client.ObjectKey{Name: wp.Spec.InventoryRef.Name, Namespace: wp.Namespace}, &inv); err == nil {
+		isK8s := inv.Spec.Mode == "kubernetes" || inv.Spec.Kubernetes != nil
+		age := time.Since(latest.Spec.Timestamp.Time)
+		if isK8s {
+			// Simple log for Kubernetes
+			log.Info("Found Kubernetes inventory report", "name", latest.Name, "age", age)
+			return &latest, nil
+		}
+	}
+
+	// Continue with AWS-specific logging
+	logParams := []interface{}{
+		"name", latest.Name,
+		"age", time.Since(latest.Spec.Timestamp.Time),
+	}
+
+	for _, service := range monitoredServices {
+		logParams = append(logParams, service.LogName, service.GetCount(&latest))
+	}
+
+	log.Info("Found inventory report", logParams...)
+
+	// If status is empty but we expect data to be there
+	hasData := false
+	for _, service := range monitoredServices {
+		if service.GetCount(&latest) > 0 {
+			hasData = true
+			break
+		}
+	}
+
+	if !hasData {
+		// Try to get the fresh version directly
+		var freshReport v1alpha1.CloudInventoryReport
+		if err := r.Get(ctx, client.ObjectKey{Name: latest.Name, Namespace: latest.Namespace}, &freshReport); err != nil {
+			log.Error(err, "❌ Failed to get latest report directly", "name", latest.Name)
+		} else {
+			// Check fresh report for data
+			freshLogParams := []interface{}{
+				"name", freshReport.Name,
+			}
+
+			freshHasData := false
+			for _, service := range monitoredServices {
+				count := service.GetCount(&freshReport)
+				freshLogParams = append(freshLogParams, service.LogName, count)
+				if count > 0 {
+					freshHasData = true
+				}
+			}
+
+			log.Info("Refreshed report data", freshLogParams...)
+
+			if freshHasData {
+				return &freshReport, nil
+			}
+		}
+	}
+
+	return &latest, nil
 }

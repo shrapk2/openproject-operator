@@ -85,6 +85,10 @@ type WorkPackagesSpec struct {
 	// AdditionalFields contains extra fields to include in the work package
 	// +optional
 	AdditionalFields JSON `json:"additionalFields,omitempty"`
+
+	// InventoryRef is an optional reference to a CloudInventory to run/report
+	// +optional
+	InventoryRef *corev1.LocalObjectReference `json:"inventoryRef,omitempty"`
 }
 
 // WorkPackagesStatus defines the observed state of WorkPackages

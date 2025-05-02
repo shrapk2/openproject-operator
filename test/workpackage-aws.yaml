@@ -1,0 +1,27 @@
+apiVersion: openproject.org/v1alpha1
+kind: WorkPackages
+metadata:
+  name: test-ticket-aws-inventory
+  namespace: default
+spec:
+  serverConfigRef:
+    name: openproject-dev
+  subject: "test-ticket-aws-inventory"
+  description: |
+    This ticket was created by the Kubernetes operator running locally.
+    ## Markdown Header
+    * markdown bullet 
+    * markdown bullet
+
+    `extra credit code block`
+
+    ### Markdown Header 3
+    1. one
+    2. two
+    3. three
+  schedule: "*/5 * * * *"
+  projectID: 4
+  typeID: 6
+  epicID: 338
+  inventoryRef:
+    name: test-aws-inventory

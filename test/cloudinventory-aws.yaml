@@ -1,0 +1,20 @@
+apiVersion: openproject.org/v1alpha1
+kind: CloudInventory
+metadata:
+  name: test-aws-inventory
+  namespace: default
+spec:
+  mode: aws
+  aws:
+    credentialsSecretRef:
+      name: devel-aws-creds
+      key: config
+    resources:
+      - ec2
+      - rds
+      - elbv2
+      - s3
+      - eip
+      - ecr
+      - natgateways
+      - internetgateways

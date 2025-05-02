@@ -1,0 +1,42 @@
+
+{{ include "includeCloudInventoryK8s" . }}
+
+{{- define "includeCloudInventoryK8s" -}}
+{{- $data := dict "root" . "Values" .Values }}
+{{- include "renderCloudInventoryK8s" $data }}
+{{- end -}}
+
+{{- define "renderCloudInventoryK8s" -}}
+{{- $root := .root }}
+{{- $invs := .Values.inventories }}
+{{- if $invs }}
+{{- range $idx, $item := $invs }}
+  {{- if eq $item.mode "kubernetes" }}
+---
+apiVersion: openproject.org/v1alpha1
+kind: CloudInventory
+metadata:
+  name: {{ printf "%s" (lower ($item.name | replace " " "-")) | trunc 63 | trimSuffix "-" }}
+  namespace: {{ $root.Release.Namespace }}
+  labels:
+    {{- include "openproject-workpackage.labels" $root | nindent 4 }}
+spec:
+  mode: kubernetes
+  kubernetes:
+    {{- if $item.kubeconfigSecretRef }}
+    kubeconfigSecretRef:
+      name: {{ $item.kubeconfigSecretRef.name }}
+      key:  {{ $item.kubeconfigSecretRef.key }}
+    {{- end }}
+    {{- if $item.namespaces }}
+    namespaces:
+      {{- range $item.namespaces }}
+      - {{ . | quote }}
+      {{- end }}
+    {{- else }}
+    namespaces: []
+    {{- end }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end -}}

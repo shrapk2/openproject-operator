@@ -1,0 +1,27 @@
+# permissions for end users to edit cloudinventories.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: openproject-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: cloudinventory-editor-role
+rules:
+- apiGroups:
+  - openproject.org
+  resources:
+  - cloudinventories
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - openproject.org
+  resources:
+  - cloudinventories/status
+  verbs:
+  - get
